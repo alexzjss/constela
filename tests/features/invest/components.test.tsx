@@ -31,7 +31,7 @@ test('PlanCard avisa reserva baixa', async () => {
 
 test('PlanCard avisa reserva desconhecida', async () => {
   await render(<PlanCard view={buildInvestView(input)} />);
-  expect(screen.getByText('Informe sua reserva em Metas e reserva para personalizar.')).toBeTruthy();
+  expect(screen.getByText('Informe sua reserva em Ajustes para personalizar.')).toBeTruthy();
 });
 
 test('PlanCard sem sobra', async () => {

@@ -83,3 +83,12 @@ export interface MonthSnapshot {
   accountBalance: number | null; // centavos
   invested: number | null; // centavos
 }
+
+/** Entrada ou saída de dinheiro de uma posição, com data: base para comparar o rendimento no tempo. */
+export interface HoldingMove {
+  id: string;
+  holdingId: string;
+  date: string; // YYYY-MM-DD
+  kind: 'aporte' | 'resgate';
+  amount: number; // centavos, > 0
+}

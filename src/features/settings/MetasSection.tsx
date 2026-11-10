@@ -1,24 +1,17 @@
-import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Goal } from '../src/domain/types';
-import { addGoal, addToGoal, deleteGoal, getSetting, listGoals, listTransactions, setSetting } from '../src/db/repo';
-import { rdbNet } from '../src/engine/composite';
-import { daysBetween, fromBR, todayLocal } from '../src/lib/dates';
-import { useDb } from '../src/lib/db-context';
-import { formatBRL, parseBRL } from '../src/lib/money';
-import { tokens } from '../src/theme/tokens';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { Goal } from '../../domain/types';
+import { addGoal, addToGoal, deleteGoal, listGoals } from '../../db/repo';
+import { daysBetween, fromBR, todayLocal } from '../../lib/dates';
+import { useDb } from '../../lib/db-context';
+import { formatBRL, parseBRL } from '../../lib/money';
+import { tokens } from '../../theme/tokens';
 
 const BR_DATE = /^\d{2}\/\d{2}\/\d{4}$/;
 
-export default function Metas() {
+export function MetasSection() {
   const db = useDb();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [reserve, setReserve] = useState('');
-  const [suggestion, setSuggestion] = useState(0);
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -26,9 +19,6 @@ export default function Metas() {
 
   const reload = useCallback(async () => {
     setGoals(await listGoals(db));
-    const saved = await getSetting(db, 'reserveBalance');
-    setReserve(saved !== null ? formatBRL(Number(saved), { cents: true }).replace('R$ ', '') : '');
-    setSuggestion(saved === null ? rdbNet(await listTransactions(db, '0000-01-01', '9999-12-31')) : 0);
   }, [db]);
   useEffect(() => { void reload(); }, [reload]);
 
@@ -38,42 +28,7 @@ export default function Metas() {
   const canAdd = name.trim().length > 0 && targetCents !== null && targetCents > 0 && deadlineIso !== null && daysBetween(today, deadlineIso) > 0;
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.topRow}>
-        <Text style={styles.title}>Metas e reserva</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()} style={styles.close}>
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.label}>Reserva de emergência</Text>
-      <TextInput
-        accessibilityLabel="Saldo da reserva"
-        style={styles.input}
-        value={reserve}
-        keyboardType="decimal-pad"
-        placeholder="0,00"
-        placeholderTextColor="#8E99A8"
-        onChangeText={setReserve}
-        onEndEditing={async () => {
-          const c = parseBRL(reserve);
-          if (c !== null && c >= 0) await setSetting(db, 'reserveBalance', String(c));
-        }}
-      />
-      {suggestion > 0 ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={async () => { await setSetting(db, 'reserveBalance', String(suggestion)); await reload(); }}
-          style={styles.suggest}
-        >
-          <Text style={styles.suggestText}>Usar {formatBRL(suggestion)} da caixinha</Text>
-        </Pressable>
-      ) : null}
-
+    <View style={styles.root}>
       {goals.map((g) => {
         const pct = Math.min(100, Math.round((g.saved / g.target) * 100));
         const input = adding[g.id] ?? '';
@@ -134,15 +89,12 @@ export default function Metas() {
       >
         <Text style={styles.addText}>Criar meta</Text>
       </Pressable>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: tokens.color.surface },
-  content: { paddingHorizontal: 20, gap: 12 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontFamily: tokens.font.display, fontSize: 28, color: tokens.color.text },
+  root: { gap: 12 },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeText: { fontSize: 20, color: tokens.color.text },
   label: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.textMuted, marginTop: 8 },

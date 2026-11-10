@@ -1,26 +1,38 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryChips } from '../src/features/add/CategoryChips';
 import { useAdd } from '../src/features/add/useAdd';
-import { todayLocal } from '../src/lib/dates';
+import { deleteTransaction } from '../src/db/repo';
+import { fromBR, isRealDate, monthOf, todayLocal } from '../src/lib/dates';
 import { useDb } from '../src/lib/db-context';
 import { formatBRL, parseBRL } from '../src/lib/money';
 import { tokens } from '../src/theme/tokens';
 
-const dateLabel = (d: string, today: string) => (d === today ? 'Hoje' : `${d.slice(8, 10)}/${d.slice(5, 7)}`);
+const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 export default function Adicionar() {
   const db = useDb();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [today] = useState(() => todayLocal()); // fixo enquanto a folha está aberta
-  const add = useAdd(db, today);
+  // ?id= edita um lançamento; ?month= cria dentro de um mês passado; ?kind= escolhe Gasto/Ganho.
+  const { id, month, kind: kindParam } = useLocalSearchParams<{ id?: string; month?: string; kind?: 'expense' | 'income' }>();
+  const add = useAdd(db, today, id);
   const [typed, setTyped] = useState<string | null>(null);
+  const [typedDate, setTypedDate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const kind = add.draft?.kind ?? 'expense';
+
+  useEffect(() => {
+    if (id) return;
+    if (kindParam === 'income' || kindParam === 'expense') add.setKind(kindParam);
+    if (month && month !== monthOf(today)) add.setDate(`${month}-01`);
+    // só na abertura da folha
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const amountText = typed ?? (add.draft ? formatBRL(add.draft.amount, { cents: true }) : 'R$ 0');
 
@@ -68,7 +80,7 @@ export default function Adicionar() {
       <TextInput
         accessibilityLabel="Descrição"
         style={styles.input}
-        value={add.text}
+        value={add.description}
         onChangeText={(t) => {
           setTyped(null);
           add.setText(t);
@@ -80,7 +92,19 @@ export default function Adicionar() {
       <CategoryChips kind={kind} selected={add.draft?.categoryId ?? (kind === 'income' ? 'renda' : 'outros')} onSelect={add.setCategory} />
 
       <View style={styles.meta}>
-        <View style={styles.metaChip}><Text style={styles.metaText}>{dateLabel(add.draft?.date ?? today, today)}</Text></View>
+        <TextInput
+          accessibilityLabel="Data"
+          style={[styles.metaChip, styles.metaText]}
+          value={typedDate ?? brDate(add.draft?.date ?? today)}
+          keyboardType="number-pad"
+          maxLength={10}
+          onChangeText={(t) => {
+            setTypedDate(t);
+            const iso = /^\d{2}\/\d{2}\/\d{4}$/.test(t) ? fromBR(t) : null;
+            if (iso && isRealDate(iso)) add.setDate(iso);
+          }}
+          onEndEditing={() => setTypedDate(null)}
+        />
       </View>
 
       <Pressable
@@ -92,7 +116,7 @@ export default function Adicionar() {
           setError(null);
           try {
             const saved = await add.save();
-            if (saved?.kind === 'income') router.replace({ pathname: '/entrada', params: { id: saved.id } });
+            if (!id && saved?.kind === 'income') router.replace({ pathname: '/entrada', params: { id: saved.id } });
             else router.back();
           } catch {
             setError('Não consegui salvar. Tente de novo.');
@@ -104,6 +128,15 @@ export default function Adicionar() {
         <Text style={styles.saveText}>Salvar</Text>
       </Pressable>
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {id ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={async () => { await deleteTransaction(db, id); router.back(); }}
+          style={styles.remove}
+        >
+          <Text style={styles.removeText}>Apagar lançamento</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -133,5 +166,7 @@ const styles = StyleSheet.create({
   save: { height: 60, borderRadius: 30, backgroundColor: tokens.color.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   saveOff: { opacity: 0.4 },
   error: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.onPrimary },
+  remove: { height: 52, borderRadius: 26, borderWidth: 2, borderColor: tokens.color.onPrimary, alignItems: 'center', justifyContent: 'center' },
+  removeText: { fontFamily: tokens.font.bodySemi, fontSize: 15, color: tokens.color.onPrimary },
   saveText: { fontFamily: tokens.font.display, fontSize: 17, color: tokens.color.primary },
 });

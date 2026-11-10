@@ -1,4 +1,4 @@
-import type { Holding, IncomeSource, MonthSnapshot } from '../domain/types';
+import type { Holding, HoldingMove, IncomeSource, MonthSnapshot } from '../domain/types';
 import type { Db } from './db';
 
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -63,6 +63,20 @@ export async function updateHolding(db: Db, h: Holding): Promise<void> {
 
 export async function deleteHolding(db: Db, id: string): Promise<void> {
   await db.run(`DELETE FROM holdings WHERE id = ?`, [id]);
+  await db.run(`DELETE FROM holding_moves WHERE holdingId = ?`, [id]);
+}
+
+export async function addHoldingMove(db: Db, m: Omit<HoldingMove, 'id'>): Promise<HoldingMove> {
+  const move: HoldingMove = { ...m, id: newId() };
+  await db.run(
+    `INSERT INTO holding_moves (id, holdingId, date, kind, amount) VALUES (?, ?, ?, ?, ?)`,
+    [move.id, move.holdingId, move.date, move.kind, move.amount],
+  );
+  return move;
+}
+
+export async function listHoldingMoves(db: Db): Promise<HoldingMove[]> {
+  return db.all<HoldingMove>(`SELECT * FROM holding_moves ORDER BY date, id`);
 }
 
 export async function getMonthSnapshot(db: Db, month: string): Promise<MonthSnapshot> {
@@ -87,6 +101,7 @@ export interface LedgerBackup {
   incomeSources?: IncomeSource[];
   incomeRuns?: { sourceId: string; month: string }[];
   holdings?: Holding[];
+  holdingMoves?: HoldingMove[];
   snapshots?: MonthSnapshot[];
 }
 
@@ -95,6 +110,7 @@ export async function exportLedger(db: Db): Promise<Required<LedgerBackup>> {
     incomeSources: await listIncomeSources(db),
     incomeRuns: await listIncomeRuns(db),
     holdings: await listHoldings(db),
+    holdingMoves: await listHoldingMoves(db),
     snapshots: await listMonthSnapshots(db),
   };
 }
@@ -113,6 +129,14 @@ export async function importLedger(db: Db, data: LedgerBackup): Promise<void> {
     await db.run(
       `INSERT INTO holdings (id, type, name, invested, value, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`,
       [h.id, h.type, h.name, h.invested, h.value, h.updatedAt],
+    );
+  }
+  const haveMoves = new Set((await listHoldingMoves(db)).map((m) => m.id));
+  for (const m of data.holdingMoves ?? []) {
+    if (haveMoves.has(m.id)) continue;
+    await db.run(
+      `INSERT INTO holding_moves (id, holdingId, date, kind, amount) VALUES (?, ?, ?, ?, ?)`,
+      [m.id, m.holdingId, m.date, m.kind, m.amount],
     );
   }
   const haveMonths = new Set((await listMonthSnapshots(db)).map((s) => s.month));

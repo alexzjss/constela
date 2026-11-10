@@ -1,3 +1,6 @@
+import { addGoal, listGoals, listTransactions } from '../../../src/db/repo';
+import { listHoldingMoves, listHoldings } from '../../../src/db/ledger';
+import { registerInvestment } from '../../../src/features/ledger/actions';
 import { memoryDb } from '../../helpers/memoryDb';
 import { migrate } from '../../../src/db/schema';
 import { DEFAULT_HYPOTHESES } from '../../../src/engine/invest/types';
@@ -51,4 +54,35 @@ test('buildParts divide o valor e dá destino concreto a cada parte', () => {
 test('sem sobra e sem taxas: nenhuma parte, sem quebrar', () => {
   expect(buildParts(buildInvestView({ ...base, settings: { ...settings, amountOverride: 0 } }))).toEqual([]);
   expect(() => buildParts(buildInvestView(base))).not.toThrow();
+});
+
+test('cada parte traz o destino: tipo de posição, nome sugerido ou meta', () => {
+  const snapshot = {
+    'bcb.selic': q(0.15), 'bcb.cdi': q(0.149), 'bcb.ipca12m': q(0.045), 'bcb.tr': q(0.001),
+    'asset:KNRI11.SA': q(150, { change12m: 0.08, dividendYield: 0.09 }),
+  };
+  const goals = [{ id: 'g1', name: 'Viagem', target: 100000, startDate: '2026-01-01', deadline: '2027-01-01', saved: 0 }];
+  const parts = buildParts(buildInvestView({
+    ...base, snapshot, goals, reserve: 450000, settings: { ...settings, amountOverride: 400000 },
+    txs: [tx('2026-10-05', 100000, 'expense', 'moradia')],
+  }));
+  const reserva = parts.find((p) => p.key.startsWith('reserva'))!;
+  expect(reserva.target).toMatchObject({ kind: 'holding' });
+  expect(parts.find((p) => p.key === 'metag1')?.target).toEqual({ kind: 'goal', goalId: 'g1', goalName: 'Viagem' });
+  expect(parts.find((p) => p.key === 'mixfii')?.target).toMatchObject({ kind: 'holding', type: 'fii' });
+});
+
+test('registerInvestment: posição nova, existente e meta', async () => {
+  const db = await memoryDb();
+  await migrate(db);
+  const goal = await addGoal(db, { name: 'Viagem', target: 100000, startDate: '2026-11-01', deadline: '2027-03-01' });
+  await registerInvestment(db, { kind: 'new', type: 'tesouro', name: 'Selic', amount: 50000 }, '2026-11-10');
+  const [h] = await listHoldings(db);
+  expect(h).toMatchObject({ name: 'Selic', invested: 50000, value: 50000 });
+  await registerInvestment(db, { kind: 'existing', holding: h, amount: 20000 }, '2026-11-12');
+  await registerInvestment(db, { kind: 'goal', goalId: goal.id, amount: 3000 }, '2026-11-12');
+  expect((await listHoldings(db))[0]).toMatchObject({ invested: 70000, value: 70000 });
+  expect((await listHoldingMoves(db)).map((m) => m.amount)).toEqual([50000, 20000]);
+  expect((await listGoals(db))[0].saved).toBe(3000);
+  expect(await listTransactions(db, '2026-11-01', '2026-11-30')).toHaveLength(2);
 });

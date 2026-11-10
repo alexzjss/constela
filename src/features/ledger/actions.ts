@@ -1,8 +1,8 @@
 import type { Db } from '../../db/db';
 import {
-  addHolding, listIncomeRuns, listIncomeSources, markIncomeRun, updateHolding,
+  addHolding, addHoldingMove, listIncomeRuns, listIncomeSources, markIncomeRun, updateHolding,
 } from '../../db/ledger';
-import { getSetting, insertTransaction } from '../../db/repo';
+import { addToGoal, getSetting, insertTransaction } from '../../db/repo';
 import type { Holding, HoldingType } from '../../domain/types';
 import { applyMove } from '../../engine/holdings';
 import { dueRuns, expectedFromSources, incomeTypeLabel } from '../../engine/income';
@@ -20,14 +20,14 @@ export async function materializeIncome(db: Db, today: string): Promise<number> 
     const s = sources.find((x) => x.id === r.sourceId)!;
     await insertTransaction(db, {
       kind: 'income', amount: s.amount, date: r.date, categoryId: s.type,
-      description: s.name || incomeTypeLabel(s.type), source: 'form',
+      description: s.name || incomeTypeLabel(s.type), source: 'form', externalId: `inc:${s.id}|${r.month}`,
     });
     await markIncomeRun(db, r.sourceId, r.month);
   }
   return runs.length;
 }
 
-/** Aporte ou resgate numa posição; registra um lançamento interno para aparecer no mês. */
+/** Aporte ou resgate numa posição; guarda o movimento e um lançamento interno para aparecer no mês. */
 export async function moveHolding(
   db: Db, h: Holding, move: 'aporte' | 'resgate', amount: Cents, today: string,
 ): Promise<Holding> {
@@ -35,6 +35,7 @@ export async function moveHolding(
   await updateHolding(db, next);
   const moved = move === 'aporte' ? next.invested - h.invested : h.value - next.value;
   if (moved > 0) {
+    await addHoldingMove(db, { holdingId: h.id, date: today, kind: move, amount: moved });
     await insertTransaction(db, {
       kind: 'internal', amount: moved, date: today, categoryId: 'investimento',
       description: `${move === 'aporte' ? 'Aporte' : 'Resgate'} ${h.name}`, source: 'form',
@@ -43,10 +44,30 @@ export async function moveHolding(
   return next;
 }
 
+/** Cria uma posição. `since` é quando o dinheiro entrou (padrão hoje); o aportado vira o primeiro movimento. */
 export async function createHolding(
-  db: Db, input: { type: HoldingType; name: string; invested: Cents; value: Cents }, today: string,
+  db: Db, input: { type: HoldingType; name: string; invested: Cents; value: Cents }, today: string, since = today,
 ): Promise<Holding> {
-  return addHolding(db, { ...input, updatedAt: today });
+  const h = await addHolding(db, { ...input, updatedAt: today });
+  if (input.invested > 0) await addHoldingMove(db, { holdingId: h.id, date: since, kind: 'aporte', amount: input.invested });
+  return h;
+}
+
+export type Registration =
+  | { kind: 'goal'; goalId: string; amount: Cents }
+  | { kind: 'existing'; holding: Holding; amount: Cents }
+  | { kind: 'new'; type: HoldingType; name: string; amount: Cents };
+
+/** O usuário aceitou uma parte da sugestão e investiu de fato: grava onde e quanto. */
+export async function registerInvestment(db: Db, r: Registration, today: string): Promise<void> {
+  if (r.kind === 'goal') {
+    await addToGoal(db, r.goalId, r.amount);
+  } else if (r.kind === 'existing') {
+    await moveHolding(db, r.holding, 'aporte', r.amount, today);
+  } else {
+    const h = await createHolding(db, { type: r.type, name: r.name, invested: 0, value: 0 }, today);
+    await moveHolding(db, h, 'aporte', r.amount, today);
+  }
 }
 
 /** Renda esperada digitada; sem ela, a soma dos ganhos recorrentes do mês; sem nenhum, null. */

@@ -12,7 +12,7 @@ export const CLASS_LABEL: Record<AssetClass, string> = {
 
 const WARNING: Record<PlanWarning, string> = {
   'reserva-baixa': 'Sua reserva está abaixo de 6 meses. Liquidez diária vem primeiro.',
-  'reserva-desconhecida': 'Informe sua reserva em Metas e reserva para personalizar.',
+  'reserva-desconhecida': 'Informe sua reserva em Ajustes para personalizar.',
   'sem-valor': 'Sem sobra este mês',
 };
 

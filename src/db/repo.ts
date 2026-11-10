@@ -19,10 +19,10 @@ const params = (t: Transaction) => [
 
 export async function insertTransaction(
   db: Db,
-  d: Draft & { source: Source },
+  d: Draft & { source: Source; externalId?: string },
 ): Promise<Transaction> {
   const t: Transaction = {
-    ...d, id: newId(), externalId: null, needsReview: false, createdAt: new Date().toISOString(),
+    ...d, id: newId(), externalId: d.externalId ?? null, needsReview: false, createdAt: new Date().toISOString(),
   };
   await db.run(INSERT, params(t));
   return t;

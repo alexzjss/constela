@@ -9,7 +9,7 @@ import { tokens } from '../theme/tokens';
 export const toField = (c: number): string => formatBRL(c, { cents: true }).replace('R$ ', '');
 export const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
-export function Screen({ title, children }: { title: string; children: React.ReactNode }) {
+export function Screen({ title, children, back = true }: { title: string; children: React.ReactNode; back?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   return (
@@ -20,9 +20,11 @@ export function Screen({ title, children }: { title: string; children: React.Rea
     >
       <View style={styles.topRow}>
         <Text style={styles.title}>{title}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()} style={styles.close}>
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
+        {back ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()} style={styles.close}>
+            <Text style={styles.closeText}>✕</Text>
+          </Pressable>
+        ) : null}
       </View>
       {children}
     </ScrollView>

@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryGrid } from '../../src/features/home/CategoryGrid';
+import { Ledger } from '../../src/features/home/Ledger';
 import { IncomeCard } from '../../src/features/home/IncomeCard';
 import { AlertCard } from '../../src/features/home/AlertCard';
 import { TodayRow } from '../../src/features/home/TodayRow';
@@ -35,6 +36,7 @@ export default function Inicio() {
             {state.alert ? <AlertCard alert={state.alert} /> : null}
             <MonthBar summary={state.summary} />
             <CategoryGrid summary={state.summary} />
+            <Ledger />
           </>
         )}
       </View>

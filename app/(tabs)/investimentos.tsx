@@ -9,6 +9,8 @@ import { Disclaimer } from '../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../src/features/invest/FixedIncomeList';
 import { PlanCard } from '../../src/features/invest/PlanCard';
 import { PortfolioCard } from '../../src/features/invest/PortfolioCard';
+import { HoldingsSection } from '../../src/features/invest/HoldingsSection';
+import { useHoldings } from '../../src/features/invest/useHoldings';
 import { useInvest } from '../../src/features/invest/useInvest';
 import { formatBRL, parseBRL } from '../../src/lib/money';
 import { tokens } from '../../src/theme/tokens';
@@ -40,10 +42,12 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-export default function Investir() {
+export default function Investimentos() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { settings, view, refreshing, refresh, update } = useInvest();
+  const holdings = useHoldings(view?.snapshot ?? null);
+  const [showSim, setShowSim] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [hypText, setHypText] = useState({ cdb: '', lci: '', custody: '' });
   const synced = useRef(false);
@@ -81,8 +85,19 @@ export default function Investir() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: 32 }]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Investir</Text>
+      <Text style={styles.title}>Investimentos</Text>
+      <View style={{ height: 12 }} />
+      <HoldingsSection view={holdings.view} onChange={() => { void holdings.reload(); void update({}); }} />
+      <PortfolioCard view={view} />
+      <PlanCard view={view} />
+      <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
+      <AssetSection assets={view.assets} onOpen={open} />
 
+      <Pressable accessibilityRole="button" onPress={() => setShowSim((v) => !v)} style={styles.simToggle}>
+        <Text style={styles.simToggleText}>{showSim ? 'Fechar ajustes da simulação' : 'Ajustar simulação (valor, perfil, prazo, hipóteses)'}</Text>
+      </Pressable>
+      {showSim ? (
+        <View>
       <Text style={styles.label}>Valor a investir</Text>
       <TextInput
         accessibilityLabel="Valor a investir"
@@ -110,11 +125,6 @@ export default function Investir() {
         ))}
       </View>
 
-      <PlanCard view={view} />
-      <PortfolioCard view={view} onEdit={() => router.push('/dados')} />
-      <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
-      <AssetSection assets={view.assets} onOpen={open} />
-
       <View style={styles.hyp}>
         <Text style={styles.sectionTitle}>Hipóteses</Text>
         <Text style={styles.muted}>Não há API pública para CDB e LCI/LCA. Ajuste ao que seu banco oferece.</Text>
@@ -136,6 +146,9 @@ export default function Investir() {
           </View>
         ))}
       </View>
+
+        </View>
+      ) : null}
 
       <View style={styles.footer}>
         <Text style={styles.muted}>
@@ -165,6 +178,8 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: tokens.color.primary },
   chipText: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.text },
   chipTextOn: { color: tokens.color.onPrimary },
+  simToggle: { minHeight: 48, borderRadius: tokens.radius.pill, backgroundColor: tokens.color.surfaceTint, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
+  simToggleText: { fontFamily: tokens.font.bodySemi, fontSize: 14, color: tokens.color.primary },
   sectionTitle: { fontFamily: tokens.font.display, fontSize: 18, color: tokens.color.text },
   hyp: { marginTop: 24 },
   hypRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },

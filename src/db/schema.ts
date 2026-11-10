@@ -1,6 +1,6 @@
 import type { Db } from './db';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export async function migrate(db: Db): Promise<void> {
   await db.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
@@ -67,6 +67,18 @@ export async function migrate(db: Db): Promise<void> {
     value INTEGER NOT NULL,
     updatedAt TEXT NOT NULL
   )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS holding_moves (
+    id TEXT PRIMARY KEY,
+    holdingId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    amount INTEGER NOT NULL
+  )`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_moves_holding ON holding_moves(holdingId)`);
+  // Posições de antes dos movimentos ganham um aporte inicial (id estável: roda uma vez só).
+  await db.run(`INSERT OR IGNORE INTO holding_moves (id, holdingId, date, kind, amount)
+    SELECT 'init-' || id, id, updatedAt, 'aporte', invested FROM holdings
+    WHERE invested > 0 AND NOT EXISTS (SELECT 1 FROM holding_moves m WHERE m.holdingId = holdings.id)`);
   await db.run(`CREATE TABLE IF NOT EXISTS month_snapshots (
     month TEXT PRIMARY KEY,
     accountBalance INTEGER,

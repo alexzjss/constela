@@ -1,22 +1,17 @@
-import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DEFAULT_CATEGORIES } from '../src/domain/categories';
-import type { Bill } from '../src/domain/types';
-import { addBill, deleteBill, getSetting, listBills, setSetting } from '../src/db/repo';
-import { useDb } from '../src/lib/db-context';
-import { formatBRL, parseBRL } from '../src/lib/money';
-import { tokens } from '../src/theme/tokens';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { DEFAULT_CATEGORIES } from '../../domain/categories';
+import type { Bill } from '../../domain/types';
+import { addBill, deleteBill, listBills } from '../../db/repo';
+import { useDb } from '../../lib/db-context';
+import { formatBRL, parseBRL } from '../../lib/money';
+import { tokens } from '../../theme/tokens';
 
 const BILL_CATEGORIES = ['contas', 'moradia', 'saude', 'educacao', 'transporte', 'outros'];
 
-export default function Contas() {
+export function ContasSection() {
   const db = useDb();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [bills, setBills] = useState<Bill[]>([]);
-  const [income, setIncome] = useState('');
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [day, setDay] = useState('');
@@ -24,8 +19,6 @@ export default function Contas() {
 
   const reload = useCallback(async () => {
     setBills(await listBills(db));
-    const v = Number(await getSetting(db, 'monthlyIncome'));
-    setIncome(v > 0 ? formatBRL(v, { cents: true }).replace('R$ ', '') : '');
   }, [db]);
   useEffect(() => { void reload(); }, [reload]);
 
@@ -34,33 +27,7 @@ export default function Contas() {
   const canAdd = name.trim().length > 0 && cents !== null && cents > 0 && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31;
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.topRow}>
-        <Text style={styles.title}>Contas fixas</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()} style={styles.close}>
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.label}>Renda mensal</Text>
-      <TextInput
-        accessibilityLabel="Renda mensal"
-        style={styles.input}
-        value={income}
-        keyboardType="decimal-pad"
-        placeholder="1600,00"
-        placeholderTextColor="#8E99A8"
-        onChangeText={setIncome}
-        onEndEditing={async () => {
-          const c = parseBRL(income);
-          await setSetting(db, 'monthlyIncome', String(c !== null && c > 0 ? c : 0));
-        }}
-      />
-
+    <View style={styles.root}>
       {bills.map((b) => (
         <View key={b.id} style={styles.bill}>
           <View style={[styles.dot, { backgroundColor: DEFAULT_CATEGORIES.find((c) => c.id === b.categoryId)?.color }]} />
@@ -110,15 +77,12 @@ export default function Contas() {
       >
         <Text style={styles.addText}>Adicionar</Text>
       </Pressable>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: tokens.color.surface },
-  content: { paddingHorizontal: 20, gap: 12 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontFamily: tokens.font.display, fontSize: 28, color: tokens.color.text },
+  root: { gap: 12 },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeText: { fontSize: 20, color: tokens.color.text },
   label: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.textMuted, marginTop: 8 },
