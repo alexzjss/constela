@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../theme/tokens';
 
-const LABELS: Record<string, string> = { index: 'Início', decisoes: 'Decisões', tempo: 'Tempo' };
+const LABELS: Record<string, string> = { index: 'Início', investir: 'Investir', decisoes: 'Decisões', tempo: 'Tempo' };
 
 export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
   const router = useRouter();

@@ -8,10 +8,13 @@ Cada marco termina com um APK usável no celular.
 | **M1 Início** | Adicionar por teclado e por texto (parser local), importar CSV do Nubank, exportar dados, barra de gastos do mês com o fantasma, score provisório (Folga + Constância) | Registrar um gasto leva menos de 10 s e o mês cabe numa tela. |
 | **M2 Dia a dia** (feito) | Contas fixas, Pode gastar hoje, alerta de gasto fora do padrão, importar backup | Um mês inteiro de uso real sem planilha paralela. |
 | **M3 Score completo** (feito) | Metas, Reserva e Rumo, tela "ver a conta", próxima ação | Todo ponto do score é explicado na tela. |
+| **Investir (fase 1)** (feito) | Aba Investir: plano em cascata (reserva, metas, mix do perfil), ranking líquido de renda fixa, indicadores de B3, exterior e cripto, cache offline, tela "ver a conta" | Taxas reais com data; sem internet mostra o cache marcado como desatualizado. |
 | **M4 Decisões** | Diário de decisões, você paralelo, taxas do Banco Central, revisitas | Um ganho extra vira decisão e é revisitado em 30 dias. |
 | **M5 Memória** | Eras, linha do tempo, resumos semanal e mensal (modelo fixo; IA opcional) | A troca de renda vira uma era nova sem perder o histórico. |
 
 ## Depois da v1
+
+- **Investir, fase 2:** ligar o motor de recomendação ao diário de decisões (M4).
 
 - Simulador "e se eu passar a ganhar R$ 3.000?".
 - Ações e fundos no diário de decisões.
