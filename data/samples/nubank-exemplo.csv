@@ -13,3 +13,5 @@
 13/10/2026,-30.00,id-0012,Débito em conta - ASSINATURA TESTE
 14/10/2026,-7.00,id-0013,Tipo Inventado - XYZ
 15/10/2026,-9.90,id-0014,"Compra no débito - LOJA, DO ZE"
+16/10/2026,-39.55,id-dup-1,Transferência enviada pelo Pix - FULANO DE TAL - •••.123.456-•• - BANCO INTER (0077) Agência: 1 Conta: 12345678-9
+16/10/2026,39.55,id-dup-1,Valor adicionado na conta por cartão de crédito

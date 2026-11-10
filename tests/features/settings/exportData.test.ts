@@ -23,10 +23,10 @@ test('importCsvFiles soma vários arquivos e é idempotente', async () => {
   const db = await memoryDb();
   await migrate(db);
   const first = await importCsvFiles(db, [sample, sample]);
-  expect(first.added).toBe(14);
-  expect(first.skipped).toBe(14);
-  expect(await importCsvFiles(db, [sample])).toEqual({ added: 0, skipped: 14 });
-  expect(await listTransactions(db, '2026-10-01', '2026-10-31')).toHaveLength(14);
+  expect(first.added).toBe(16);
+  expect(first.skipped).toBe(16);
+  expect(await importCsvFiles(db, [sample])).toEqual({ added: 0, skipped: 16 });
+  expect(await listTransactions(db, '2026-10-01', '2026-10-31')).toHaveLength(16);
 });
 
 test('arquivo que não é do Nubank lança NubankFormatError', async () => {

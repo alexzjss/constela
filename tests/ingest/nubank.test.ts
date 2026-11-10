@@ -6,7 +6,7 @@ const rows = parseNubankCsv(text, {});
 const find = (prefix: string) => rows.find((r) => r.description.startsWith(prefix))!;
 
 test('lê todas as linhas, mesmo com BOM e vírgula entre aspas', () => {
-  expect(rows).toHaveLength(14);
+  expect(rows).toHaveLength(16);
   expect(find('Compra no débito - LOJA, DO ZE').amount).toBe(990);
 });
 
@@ -14,7 +14,7 @@ test('Pix enviado vira gasto em Outros, com descrição sanitizada', () => {
   const pix = find('Transferência enviada pelo Pix');
   expect(pix).toMatchObject({
     kind: 'expense', categoryId: 'outros', amount: 1680, date: '2026-10-02',
-    source: 'csv', externalId: 'id-0001', needsReview: false,
+    source: 'csv', externalId: 'id-0001|-16.80', needsReview: false,
   });
   expect(pix.description).toBe('Transferência enviada pelo Pix - FULANO DE TAL');
 });
@@ -53,4 +53,11 @@ test('tipo desconhecido vai para revisão', () => {
 
 test('cabeçalho errado lança NubankFormatError', () => {
   expect(() => parseNubankCsv('a,b\n1,2', {})).toThrow(NubankFormatError);
+});
+
+test('mesmo Identificador com valores opostos são lançamentos distintos', () => {
+  const pair = rows.filter((r) => r.externalId?.startsWith('id-dup-1'));
+  expect(pair).toHaveLength(2);
+  expect(new Set(pair.map((r) => r.externalId)).size).toBe(2);
+  expect(pair.map((r) => r.kind).sort()).toEqual(['expense', 'internal']);
 });

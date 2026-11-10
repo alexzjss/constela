@@ -76,7 +76,9 @@ export function parseNubankCsv(text: string, userRules: Record<string, string>):
     const hit = RULES.find(([prefix]) => desc.startsWith(prefix));
     const base = {
       date: fromBR(data), amount: Math.abs(cents), description,
-      source: 'csv' as const, externalId: id,
+      // O Identificador do Nubank se repete entre as duas pontas de uma operação
+      // (ex.: Pix + crédito adicionado, Pix + estorno), com valores opostos.
+      source: 'csv' as const, externalId: `${id}|${valor.trim()}`,
     };
     if (!hit) {
       const income = cents > 0;
