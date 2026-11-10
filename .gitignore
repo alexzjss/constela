@@ -1,10 +1,11 @@
+!.env.example
 # dados reais nunca entram no repositorio
-data/private/
+*.aab
+*.apk
 .env
 .env.*
-!.env.example
-node_modules/
 .expo/
+.superpowers/
+data/private/
 dist/
-*.apk
-*.aab
+node_modules/

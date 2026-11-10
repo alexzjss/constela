@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Paralelo",
+    "slug": "paralelo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "paralelo",
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-font"
+    ],
+    "android": {
+      "package": "dev.paralelo.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2447F9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    }
+  }
+}
