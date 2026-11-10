@@ -1,14 +1,12 @@
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../theme/tokens';
 
-const LABELS: Record<string, string> = { index: 'Início', ganhos: 'Ganhos', investimentos: 'Investimentos' };
+const LABELS: Record<string, string> = { investimentos: 'Investimentos' };
 
 export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.bar, { paddingBottom: insets.bottom }]}>
@@ -28,14 +26,6 @@ export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
           );
         })}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Adicionar gasto ou ganho"
-        onPress={() => router.push('/adicionar')}
-        style={styles.plus}
-      >
-        <Text style={styles.plusText}>+</Text>
-      </Pressable>
     </View>
   );
 }

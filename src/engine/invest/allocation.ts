@@ -1,7 +1,4 @@
-import type { Goal } from '../../domain/types';
-import { daysBetween } from '../../lib/dates';
 import type { Cents } from '../../lib/money';
-import { goalRatio } from '../composite';
 import { ASSET_CLASSES, type AssetClass, type Profile } from './types';
 
 export const PROFILE_MIX: Record<Profile, Record<AssetClass, number>> = {
@@ -58,19 +55,12 @@ export function classRange(pct: number): { min: number; max: number } | null {
   return { min: Math.max(0, pct - 5), max: Math.min(100, pct + 5) };
 }
 
-export type PlanWarning = 'reserva-baixa' | 'reserva-desconhecida' | 'sem-valor';
-export type PlanStep =
-  | { kind: 'reserva'; amount: Cents }
-  | { kind: 'meta'; amount: Cents; goalId: string; goalName: string }
-  | { kind: 'mix'; amount: Cents; byClass: Record<AssetClass, Cents> };
+export type PlanWarning = 'sem-valor';
+export type PlanStep = { kind: 'mix'; amount: Cents; byClass: Record<AssetClass, Cents> };
 
 export interface PlanInput {
   amount: Cents;
   profile: Profile;
-  reserve: Cents | null;
-  essentialMonthly: Cents;
-  goals: Goal[];
-  today: string;
   /** Quanto já está investido em cada classe; sem isso vale o mix puro do perfil. */
   portfolio?: Record<AssetClass, Cents>;
 }
@@ -78,50 +68,16 @@ export interface PlanInput {
 export interface Plan {
   steps: PlanStep[];
   warnings: PlanWarning[];
-  reserveMonths: number | null;
 }
 
-const RESERVE_TARGET_MONTHS = 6;
-
 export function planAllocation(input: PlanInput): Plan {
-  const { amount, profile, reserve, essentialMonthly, goals, today, portfolio } = input;
-  if (amount <= 0) return { steps: [], warnings: ['sem-valor'], reserveMonths: null };
-
-  const steps: PlanStep[] = [];
-  const warnings: PlanWarning[] = [];
-  let left = amount;
-  let reserveMonths: number | null = null;
-
-  if (reserve === null || essentialMonthly <= 0) {
-    warnings.push('reserva-desconhecida');
-  } else {
-    reserveMonths = reserve / essentialMonthly;
-    const gap = Math.max(0, RESERVE_TARGET_MONTHS * essentialMonthly - reserve);
-    if (reserveMonths < RESERVE_TARGET_MONTHS) warnings.push('reserva-baixa');
-    const share = reserveMonths < 3 ? amount : Math.round(amount / 2);
-    const toReserve = Math.min(gap, share, left);
-    if (toReserve > 0) {
-      steps.push({ kind: 'reserva', amount: toReserve });
-      left -= toReserve;
-    }
-  }
-
-  const late = goals
-    .filter((g) => daysBetween(today, g.deadline) < 365 && goalRatio(g, today) < 1)
-    .sort((a, b) => (a.deadline < b.deadline ? -1 : 1));
-  for (const g of late) {
-    const remaining = g.target - g.saved;
-    if (remaining <= 0 || left <= 0) continue;
-    const days = daysBetween(today, g.deadline);
-    const installment = days <= 0 ? remaining : Math.ceil(remaining / Math.ceil(days / 30));
-    const amt = Math.min(installment, left);
-    steps.push({ kind: 'meta', amount: amt, goalId: g.id, goalName: g.name });
-    left -= amt;
-  }
-
-  if (left > 0) steps.push({
-      kind: 'mix', amount: left,
-      byClass: portfolio ? rebalanceSplit(left, profile, portfolio) : splitByMix(left, profile),
-    });
-  return { steps, warnings, reserveMonths };
+  const { amount, profile, portfolio } = input;
+  if (amount <= 0) return { steps: [], warnings: ['sem-valor'] };
+  return {
+    steps: [{
+      kind: 'mix', amount,
+      byClass: portfolio ? rebalanceSplit(amount, profile, portfolio) : splitByMix(amount, profile),
+    }],
+    warnings: [],
+  };
 }

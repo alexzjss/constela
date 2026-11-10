@@ -104,12 +104,11 @@ export default function Investimentos() {
         style={styles.input}
         value={amountText}
         keyboardType="decimal-pad"
-        placeholder={formatBRL(view.defaultAmount, { cents: true }).replace('R$ ', '')}
+        placeholder="0,00"
         placeholderTextColor="#8E99A8"
         onChangeText={setAmountText}
         onEndEditing={() => commit()}
       />
-      <Text style={styles.muted}>Em branco usa o que sobra no mês: {formatBRL(view.defaultAmount)}.</Text>
 
       <Text style={styles.label}>Perfil</Text>
       <View style={styles.chips}>

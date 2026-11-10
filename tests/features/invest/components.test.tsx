@@ -8,10 +8,7 @@ import { buildInvestView, type AssetRow, type ViewInput } from '../../../src/fea
 import { DEFAULT_HYPOTHESES } from '../../../src/engine/invest/types';
 
 const settings = { profile: 'moderado' as const, term: 12 as const, amountOverride: null, hyp: DEFAULT_HYPOTHESES };
-const input: ViewInput = {
-  settings: { ...settings, amountOverride: 300000 }, snapshot: {}, txs: [], bills: [], goals: [],
-  reserve: 0, incomeSetting: 500000, today: '2026-11-09',
-};
+const input: ViewInput = { settings: { ...settings, amountOverride: 300000 }, snapshot: {} };
 const q = (value: number) => ({ value, asOf: '2026-11-06', fetchedAt: '2026-11-09T10:00:00.000Z', stale: false });
 
 test('Disclaimer mostra o texto exato', async () => {
@@ -19,24 +16,9 @@ test('Disclaimer mostra o texto exato', async () => {
   expect(screen.getByText('Simulação educativa com dados públicos. Não é recomendação de investimento. Rentabilidade passada não garante futura.')).toBeTruthy();
 });
 
-test('PlanCard avisa reserva baixa', async () => {
-  // reserva 0 mas gasto essencial desconhecido => reserva-desconhecida; força meses com histórico
-  const view = buildInvestView({
-    ...input, reserve: 0,
-    txs: [{ id: 'a', date: '2026-10-05', amount: 100000, kind: 'expense', categoryId: 'moradia', description: '', source: 'form', externalId: null, needsReview: false, createdAt: '' }],
-  });
-  await render(<PlanCard view={view} />);
-  expect(screen.getByText('Sua reserva está abaixo de 6 meses. Liquidez diária vem primeiro.')).toBeTruthy();
-});
-
-test('PlanCard avisa reserva desconhecida', async () => {
-  await render(<PlanCard view={buildInvestView(input)} />);
-  expect(screen.getByText('Informe sua reserva em Ajustes para personalizar.')).toBeTruthy();
-});
-
-test('PlanCard sem sobra', async () => {
-  await render(<PlanCard view={buildInvestView({ ...input, settings: { ...settings, amountOverride: null }, incomeSetting: null })} />);
-  expect(screen.getByText('Sem sobra este mês')).toBeTruthy();
+test('PlanCard sem valor pede o valor a investir', async () => {
+  await render(<PlanCard view={buildInvestView({ ...input, settings: { ...settings, amountOverride: null } })} />);
+  expect(screen.getByText('Informe quanto quer investir para ver a sugestão.')).toBeTruthy();
 });
 
 test('PlanCard conservador mostra "não sugerido" no exterior', async () => {
@@ -72,5 +54,5 @@ test('AssetSection mostra — quando falta indicador e selo de desatualizado', a
 test('FixedIncomeList avisa quando é simulação de referência', async () => {
   const view = buildInvestView({ ...input, snapshot: { 'bcb.cdi': q(0.15), 'bcb.selic': q(0.15), 'bcb.tr': q(0) } });
   await render(<FixedIncomeList ranking={view.recommendation.ranking} noData={false} reference onOpen={() => {}} />);
-  expect(screen.getByText('Simulação sobre R$ 1.000, sem sobra este mês.')).toBeTruthy();
+  expect(screen.getByText('Simulação sobre R$ 1.000. Informe um valor para usar o seu.')).toBeTruthy();
 });

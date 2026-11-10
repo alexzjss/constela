@@ -2,16 +2,13 @@ import { recommend, type RecommendInput } from '../../../src/engine/invest/recom
 import { DEFAULT_HYPOTHESES, EMPTY_RATES } from '../../../src/engine/invest/types';
 
 const input: RecommendInput = {
-  amount: 1_000_000, profile: 'moderado', reserve: 700000, essentialMonthly: 100000, goals: [],
-  today: '2026-11-09', term: 12, hyp: DEFAULT_HYPOTHESES,
+  amount: 1_000_000, profile: 'moderado', term: 12, hyp: DEFAULT_HYPOTHESES,
   rates: { ...EMPTY_RATES, cdi: 0.15, selic: 0.15, tr: 0 },
 };
 
-test('escolhe o melhor produto e o melhor de liquidez diária', () => {
+test('escolhe o melhor produto de renda fixa', () => {
   const r = recommend(input);
   expect(r.fixedProduct).toBe('lciLca');
-  const daily = r.ranking.find((x) => x.liquidity === 'diaria')!;
-  expect(r.reserveProduct).toBe(daily.id);
   expect(r.classes.reduce((a, c) => a + c.amount, 0)).toBe(1_000_000);
   expect(r.classes[4]).toMatchObject({ cls: 'cripto', range: { min: 0, max: 7 } });
 });
@@ -24,7 +21,6 @@ test('conservador não sugere exterior', () => {
 test('sem taxas ainda calcula o plano', () => {
   const r = recommend({ ...input, rates: EMPTY_RATES });
   expect(r.ranking).toEqual([]);
-  expect(r.reserveProduct).toBeNull();
   expect(r.fixedProduct).toBeNull();
   expect(r.plan.steps.length).toBeGreaterThan(0);
 });

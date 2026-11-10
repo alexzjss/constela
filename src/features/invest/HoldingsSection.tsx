@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Chips, Field, Label, Muted, Row, toField } from '../../components/form';
-import { deleteHolding, updateHolding } from '../../db/ledger';
+import { deleteHolding, updateHolding } from '../../db/holdings';
 import type { Holding, HoldingType } from '../../domain/types';
 import { HOLDING_TYPES, holdingTypeLabel } from '../../engine/holdings';
 import { fromBR, isRealDate, todayLocal } from '../../lib/dates';
 import { useDb } from '../../lib/db-context';
 import { formatBRL, parseBRL } from '../../lib/money';
 import { tokens } from '../../theme/tokens';
-import { createHolding, moveHolding } from '../ledger/actions';
+import { createHolding, moveHolding } from './actions';
 import type { HoldingRow, HoldingsView } from './holdingsView';
 
 const pct = (r: number | null) => (r === null ? '' : `${r >= 0 ? '+' : ''}${(r * 100).toFixed(1).replace('.', ',')}%`);

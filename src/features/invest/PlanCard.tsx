@@ -11,23 +11,21 @@ export const CLASS_LABEL: Record<AssetClass, string> = {
 };
 
 const WARNING: Record<PlanWarning, string> = {
-  'reserva-baixa': 'Sua reserva está abaixo de 6 meses. Liquidez diária vem primeiro.',
-  'reserva-desconhecida': 'Informe sua reserva em Ajustes para personalizar.',
-  'sem-valor': 'Sem sobra este mês',
+  'sem-valor': 'Informe quanto quer investir para ver a sugestão.',
 };
 
 export function PlanCard({ view }: { view: InvestView }) {
   const { plan, classes } = view.recommendation;
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Sugestão do mês</Text>
+      <Text style={styles.title}>Onde investir</Text>
       {plan.warnings.map((w) => (
         <Text key={w} style={styles.warn}>{WARNING[w]}</Text>
       ))}
       {plan.steps.map((s, i) => (
         <View key={i} style={styles.row}>
           <Text style={styles.label}>
-            {s.kind === 'reserva' ? 'Reserva de emergência' : s.kind === 'meta' ? `Meta: ${s.goalName}` : 'Investir pelo perfil'}
+            Investir pelo perfil
           </Text>
           <Text style={styles.value}>{formatBRL(s.amount)}</Text>
         </View>

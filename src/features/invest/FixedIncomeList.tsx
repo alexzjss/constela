@@ -20,7 +20,7 @@ export function FixedIncomeList(props: {
         <Text style={styles.muted}>Sem dados de taxas ainda. Conecte-se para atualizar.</Text>
       ) : (
         <>
-        {reference ? <Text style={styles.muted}>Simulação sobre R$ 1.000, sem sobra este mês.</Text> : null}
+        {reference ? <Text style={styles.muted}>Simulação sobre R$ 1.000. Informe um valor para usar o seu.</Text> : null}
         {ranking.map((r) => (
           <Pressable key={r.id} accessibilityRole="button" onPress={() => onOpen(`fixed:${r.id}`)} style={styles.row}>
             <View style={styles.left}>
