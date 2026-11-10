@@ -1,14 +1,14 @@
 import { memoryDb } from '../helpers/memoryDb';
 import { migrate } from '../../src/db/schema';
 import {
-  addHolding, addIncomeSource, deleteIncomeSource, getMonthSnapshot, listHoldings, listIncomeSources,
+  addHolding, addIncomeSource, deleteHolding, deleteIncomeSource, listHoldingMoves, getMonthSnapshot, listHoldings, listIncomeSources,
   saveMonthSnapshot, updateIncomeSource,
 } from '../../src/db/ledger';
 import {
   deleteSetting, deleteTransaction, exportAll, getSetting, getTransaction, importBackup, insertTransaction,
   listTransactions, setSetting, updateTransaction,
 } from '../../src/db/repo';
-import { materializeIncome, incomeSetting, moveHolding } from '../../src/features/ledger/actions';
+import { createHolding, materializeIncome, incomeSetting, moveHolding } from '../../src/features/ledger/actions';
 
 async function fresh() {
   const db = await memoryDb();
@@ -111,4 +111,38 @@ test('backup leva ganhos recorrentes, investimentos e fotografias, sem duplicar'
   expect(await getMonthSnapshot(b, '2026-10')).toMatchObject({ accountBalance: 5, invested: 6 });
   expect(await getSetting(b, 'accountBalance')).toBe('777');
   expect(await materializeIncome(b, '2026-11-10')).toBe(0); // runs vieram junto: não relança
+});
+
+test('aporte e resgate guardam movimentos datados; excluir leva junto', async () => {
+  const db = await fresh();
+  const h = await createHolding(db, { type: 'cdb', name: 'CDB', invested: 100000, value: 100000 }, '2026-11-10', '2026-08-01');
+  const after = await moveHolding(db, h, 'aporte', 20000, '2026-11-10');
+  await moveHolding(db, after, 'resgate', 30000, '2026-11-11');
+  expect((await listHoldingMoves(db)).map((m) => [m.date, m.kind, m.amount])).toEqual([
+    ['2026-08-01', 'aporte', 100000], ['2026-11-10', 'aporte', 20000], ['2026-11-11', 'resgate', 30000],
+  ]);
+  await deleteHolding(db, h.id);
+  expect(await listHoldingMoves(db)).toEqual([]);
+});
+
+test('migrate cria aporte inicial para posição antiga, uma vez só', async () => {
+  const db = await fresh();
+  await db.run(`INSERT INTO holdings (id, type, name, invested, value, updatedAt) VALUES ('old', 'cdb', 'CDB', 5000, 5500, '2026-10-01')`);
+  await migrate(db);
+  await migrate(db);
+  expect(await listHoldingMoves(db)).toEqual([{ id: 'init-old', holdingId: 'old', date: '2026-10-01', kind: 'aporte', amount: 5000 }]);
+});
+
+test('ganho recorrente leva externalId inc:, e backup leva os movimentos', async () => {
+  const a = await fresh();
+  await addIncomeSource(a, bolsa);
+  await materializeIncome(a, '2026-11-10');
+  const txs = await listTransactions(a, '2026-09-01', '2026-11-30');
+  expect(txs.every((t) => t.externalId?.startsWith('inc:'))).toBe(true);
+  await createHolding(a, { type: 'cdb', name: 'CDB', invested: 100, value: 100 }, '2026-11-10');
+  const dump = JSON.parse(JSON.stringify(await exportAll(a)));
+  const b = await fresh();
+  await importBackup(b, dump);
+  await importBackup(b, dump);
+  expect(await listHoldingMoves(b)).toHaveLength(1);
 });
