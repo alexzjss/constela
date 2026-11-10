@@ -21,14 +21,14 @@ const all: Series = {
   '226': [{ data: '06/11/2026', valor: '0.1' }],
 };
 
-const byKey = (es: { key: string }[], k: string) => es.find((e) => e.key === k);
+const byKey = (es: { key: string; value: number }[], k: string) => es.find((e) => e.key === k);
 
 test('converte Selic, CDI, IPCA 12m e TR', async () => {
   const es = await fetchBcb(fakeFetch(all), NOW);
   expect(byKey(es, 'bcb.selic')).toMatchObject({ value: 0.149, asOf: '2026-11-06', fetchedAt: NOW.toISOString() });
-  expect((byKey(es, 'bcb.cdi') as { value: number }).value).toBeCloseTo(0.148, 6);
-  expect((byKey(es, 'bcb.ipca12m') as { value: number }).value).toBeCloseTo(0.0616778, 6);
-  expect((byKey(es, 'bcb.tr') as { value: number }).value).toBeCloseTo(1.001 ** 12 - 1, 8);
+  expect(byKey(es, 'bcb.cdi')!.value).toBeCloseTo(0.148, 6);
+  expect(byKey(es, 'bcb.ipca12m')!.value).toBeCloseTo(0.0616778, 6);
+  expect(byKey(es, 'bcb.tr')!.value).toBeCloseTo(1.001 ** 12 - 1, 8);
 });
 
 test('IPCA com menos de 12 valores é omitido', async () => {
