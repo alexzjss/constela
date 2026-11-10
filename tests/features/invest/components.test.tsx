@@ -1,10 +1,9 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { AssetSection } from '../../../src/features/invest/AssetSection';
 import { Disclaimer } from '../../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../../src/features/invest/FixedIncomeList';
 import { PlanCard } from '../../../src/features/invest/PlanCard';
-import { buildInvestView, type AssetRow, type ViewInput } from '../../../src/features/invest/view';
+import { buildInvestView, type ViewInput } from '../../../src/features/invest/view';
 import { DEFAULT_HYPOTHESES } from '../../../src/engine/invest/types';
 
 const settings = { profile: 'moderado' as const, term: 12 as const, amountOverride: null, hyp: DEFAULT_HYPOTHESES };
@@ -38,17 +37,6 @@ test('FixedIncomeList abre a conta ao tocar', async () => {
   await render(<FixedIncomeList ranking={view.recommendation.ranking} noData={false} onOpen={onOpen} />);
   fireEvent.press(screen.getByText('CDB'));
   expect(onOpen).toHaveBeenCalledWith('fixed:cdb');
-});
-
-const row = (over: Partial<AssetRow>): AssetRow => ({
-  symbol: 'KNRI11.SA', name: 'KNRI11 (FII tijolo)', cls: 'fii', priceBrl: 15000,
-  change12m: 0.1, dividendYield: null, asOf: '2026-11-09', stale: false, ...over,
-});
-
-test('AssetSection mostra — quando falta indicador e selo de desatualizado', async () => {
-  await render(<AssetSection assets={[row({ stale: true })]} onOpen={() => {}} />);
-  expect(screen.getAllByText(/—/).length).toBeGreaterThan(0);
-  expect(screen.getByText(/desatualizado/)).toBeTruthy();
 });
 
 test('FixedIncomeList avisa quando é simulação de referência', async () => {

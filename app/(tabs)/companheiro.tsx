@@ -4,14 +4,12 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Profile, Term } from '../../src/engine/invest/types';
 import type { InvestSettings } from '../../src/features/invest/settings';
-import { AssetSection } from '../../src/features/invest/AssetSection';
 import { Disclaimer } from '../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../src/features/invest/FixedIncomeList';
 import { PlanCard } from '../../src/features/invest/PlanCard';
-import { PortfolioCard } from '../../src/features/invest/PortfolioCard';
-import { HoldingsSection } from '../../src/features/invest/HoldingsSection';
-import { useHoldings } from '../../src/features/invest/useHoldings';
 import { useInvest } from '../../src/features/invest/useInvest';
+import { DiversifyCard } from '../../src/features/research/DiversifyCard';
+import { useResearch } from '../../src/features/research/useResearch';
 import { formatBRL, parseBRL } from '../../src/lib/money';
 import { tokens } from '../../src/theme/tokens';
 
@@ -42,11 +40,11 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-export default function Investimentos() {
+export default function Companheiro() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { settings, view, refreshing, refresh, update } = useInvest();
-  const holdings = useHoldings(view?.snapshot ?? null);
+  const research = useResearch();
   const [showSim, setShowSim] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [hypText, setHypText] = useState({ cdb: '', lci: '', custody: '' });
@@ -85,13 +83,11 @@ export default function Investimentos() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: 32 }]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Investimentos</Text>
-      <View style={{ height: 12 }} />
-      <HoldingsSection view={holdings.view} onChange={() => { void holdings.reload(); void update({}); }} />
-      <PortfolioCard view={view} />
+      <Text style={styles.title}>Companheiro</Text>
+      <Text style={styles.muted}>Quanto você quer investir agora? Ajuste abaixo e veja onde colocar.</Text>
       <PlanCard view={view} />
+      <DiversifyCard ctx={research.ctx} loading={research.loading} />
       <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
-      <AssetSection assets={view.assets} onOpen={open} />
 
       <Pressable accessibilityRole="button" onPress={() => setShowSim((v) => !v)} style={styles.simToggle}>
         <Text style={styles.simToggleText}>{showSim ? 'Fechar ajustes da simulação' : 'Ajustar simulação (valor, perfil, prazo, hipóteses)'}</Text>

@@ -32,6 +32,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="ajustes" />
+          <Stack.Screen name="ativo" />
           <Stack.Screen name="conta" />
         </Stack>
       </DbProvider>

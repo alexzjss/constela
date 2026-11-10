@@ -1,6 +1,6 @@
 import {
   DEFAULT_WINDOW, MIN_OBS, annualVolatility, bandOf, beta, correlation, lastWeeks, maxDrawdown,
-  mostDiversifying, mostSimilar, portfolioImpact, toBrl, totalReturn, weeklyReturns,
+  mostDiversifying, mostSimilar, portfolioImpact, portfolioReturns, toBrl, totalReturn, weeklyReturns,
   type Impact, type PricePoint, type Ranked, type Returns,
 } from '../../engine/correlation';
 
@@ -212,4 +212,41 @@ export function suggestDiversifiers(
     });
   }
   return out.sort((a, b) => a.volChange - b.volChange).slice(0, opts.limit ?? 5);
+}
+
+export interface RiskPair {
+  a: string;
+  b: string;
+  correlation: number;
+}
+
+export interface PortfolioRisk {
+  volatility: number | null;
+  weeks: number;
+  /** Fatia do valor da carteira que tem histórico (posições ligadas a um símbolo). */
+  coverage: number;
+  pairs: RiskPair[];
+}
+
+/** Risco da carteira só com as posições que têm símbolo e histórico; `totalValue` é o valor de todas elas. */
+export function portfolioRisk(
+  held: HeldAsset[], fx: PricePoint[] | null, totalValue: number, windowWeeks = DEFAULT_WINDOW,
+): PortfolioRisk {
+  const items = held
+    .map((h) => ({ id: h.series.symbol, returns: returnsOf(h.series, fx, windowWeeks), weight: h.value }))
+    .filter((h): h is { id: string; returns: Returns; weight: number } => h.returns !== null && h.weight > 0);
+  const covered = items.reduce((s, i) => s + i.weight, 0);
+  const port = portfolioReturns(items);
+  const pairs: RiskPair[] = [];
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const c = correlation(items[i].returns, items[j].returns).correlation;
+      if (c !== null) pairs.push({ a: items[i].id, b: items[j].id, correlation: c });
+    }
+  }
+  return {
+    volatility: annualVolatility(port), weeks: port.size,
+    coverage: totalValue > 0 ? Math.min(1, covered / totalValue) : 0,
+    pairs: pairs.sort((x, y) => y.correlation - x.correlation).slice(0, 3),
+  };
 }

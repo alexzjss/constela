@@ -7,7 +7,7 @@ import { memoryDb } from '../helpers/memoryDb';
 const NOW = new Date('2026-11-09T12:00:00Z');
 const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString();
 
-/** fetch falso: responde às três fontes por URL e conta as chamadas. */
+/** fetch falso: responde às duas fontes por URL e conta as chamadas. */
 function fakeFetch(opts: { failBcb?: boolean } = {}) {
   const calls: string[] = [];
   const f = (async (url: string) => {
@@ -20,10 +20,7 @@ function fakeFetch(opts: { failBcb?: boolean } = {}) {
       const csv = 'h\nTesouro Selic;01/03/2027;06/11/2026;0,02;0;0;0;0';
       return { ok: true, status: 200, text: async () => csv } as Response;
     }
-    return {
-      ok: true, status: 200,
-      json: async () => ({ chart: { result: [{ meta: { regularMarketPrice: 10, regularMarketTime: 1794259130 }, indicators: { quote: [{ close: [1, 2] }] } }] } }),
-    } as Response;
+    throw new Error('fonte inesperada');
   }) as unknown as typeof fetch;
   return { f, calls };
 }
@@ -37,18 +34,16 @@ async function freshDb() {
 test('sourceOf separa as fontes pelo prefixo da chave', () => {
   expect(sourceOf('bcb.selic')).toBe('bcb');
   expect(sourceOf('tesouro.pre.12')).toBe('tesouro');
-  expect(sourceOf('asset:VOO')).toBe('yahoo');
-  expect(sourceOf('fx.usdbrl')).toBe('yahoo');
 });
 
 test('primeira chamada grava; a segunda dentro do TTL usa o cache sem rede', async () => {
   const db = await freshDb();
   const a = fakeFetch();
   const r1 = await refreshMarket(db, a.f, NOW);
-  expect(r1.sources).toEqual({ bcb: 'ok', tesouro: 'ok', yahoo: 'ok' });
+  expect(r1.sources).toEqual({ bcb: 'ok', tesouro: 'ok' });
   const b = fakeFetch();
   const r2 = await refreshMarket(db, b.f, NOW);
-  expect(r2.sources).toEqual({ bcb: 'cached', tesouro: 'cached', yahoo: 'cached' });
+  expect(r2.sources).toEqual({ bcb: 'cached', tesouro: 'cached' });
   expect(b.calls).toHaveLength(0);
 });
 

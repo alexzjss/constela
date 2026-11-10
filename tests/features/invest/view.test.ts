@@ -1,6 +1,5 @@
 import { DEFAULT_HYPOTHESES } from '../../../src/engine/invest/types';
 import { buildInvestView, explainFor, type ViewInput } from '../../../src/features/invest/view';
-import type { MarketSnapshot } from '../../../src/invest/refresh';
 
 const settings = { profile: 'moderado' as const, term: 12 as const, amountOverride: null, hyp: DEFAULT_HYPOTHESES };
 const q = (value: number, extra?: Record<string, number | null>) => ({
@@ -12,8 +11,6 @@ test('snapshot vazio não lança e marca noData', () => {
   const v = buildInvestView(base);
   expect(v.noData).toBe(true);
   expect(v.recommendation.ranking).toEqual([]);
-  expect(v.assets).toHaveLength(13);
-  expect(v.assets.every((a) => a.priceBrl === null)).toBe(true);
   expect(v.asOf).toBeNull();
 });
 
@@ -26,16 +23,6 @@ test('sem valor digitado, o amount é 0 e o plano avisa', () => {
   const v = buildInvestView(base);
   expect(v.amount).toBe(0);
   expect(v.recommendation.plan.warnings).toContain('sem-valor');
-});
-
-test('ativo em dólar é convertido; sem câmbio fica null', () => {
-  const snap: MarketSnapshot = { 'asset:VOO': q(100, { change12m: 0.1, dividendYield: 0.01 }), 'fx.usdbrl': q(5) };
-  const v = buildInvestView({ ...base, snapshot: snap });
-  const voo = v.assets.find((a) => a.symbol === 'VOO')!;
-  expect(voo.priceBrl).toBe(50000);
-  expect(voo.dividendYield).toBe(0.01);
-  const v2 = buildInvestView({ ...base, snapshot: { 'asset:VOO': q(100) } });
-  expect(v2.assets.find((a) => a.symbol === 'VOO')!.priceBrl).toBeNull();
 });
 
 test('com taxas, noData é false e explainFor devolve as linhas', () => {

@@ -1,5 +1,5 @@
 import type { PricePoint } from '../../../src/engine/correlation';
-import { analyze, inBrl, suggestDiversifiers, type AssetSeries } from '../../../src/features/research/analysis';
+import { analyze, inBrl, portfolioRisk, suggestDiversifiers, type AssetSeries } from '../../../src/features/research/analysis';
 import { addToWatchlist, loadWatchlist, removeFromWatchlist } from '../../../src/features/research/watchlist';
 import { migrate } from '../../../src/db/schema';
 import { memoryDb } from '../../helpers/memoryDb';
@@ -93,4 +93,16 @@ test('lista de acompanhamento: adiciona sem duplicar, remove e sobrevive a lixo'
   expect(await removeFromWatchlist(d, 'PETR4.SA')).toEqual([]);
   await d.run(`UPDATE meta SET value = 'não é json' WHERE key = 'watchlist'`);
   expect(await loadWatchlist(d)).toEqual([]);
+});
+
+test('risco da carteira: cobertura, volatilidade e o par mais parecido', () => {
+  const a = series('A', A);
+  const b = series('B', A.map((x) => x * 0.9));
+  const c = series('C', noise(N, 9));
+  const r = portfolioRisk([{ series: a, value: 100 }, { series: b, value: 100 }, { series: c, value: 100 }], null, 400);
+  expect(r.coverage).toBeCloseTo(0.75, 10);
+  expect(r.volatility).toBeGreaterThan(0);
+  expect(r.pairs[0]).toMatchObject({ a: 'A', b: 'B' });
+  expect(r.pairs[0].correlation).toBeCloseTo(1, 6);
+  expect(portfolioRisk([], null, 0)).toMatchObject({ volatility: null, coverage: 0, pairs: [] });
 });

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../theme/tokens';
 
-const LABELS: Record<string, string> = { investimentos: 'Investimentos' };
+const LABELS: Record<string, string> = { carteira: 'Carteira', pesquisar: 'Pesquisar', companheiro: 'Companheiro' };
 
 export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();

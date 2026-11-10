@@ -1,14 +1,12 @@
 import type { Db } from '../db/db';
 import { EMPTY_RATES, TERMS, type Rates } from '../engine/invest/types';
-import { CURATED_ASSETS } from './assets';
 import { getAllEntries, putEntries, type CacheEntry, type FetchFn } from './cache';
 import { fetchBcb } from './sources/bcb';
 import { fetchTesouro } from './sources/tesouro';
-import { fetchYahoo } from './sources/yahoo';
 
-export type SourceId = 'bcb' | 'tesouro' | 'yahoo';
-export const TTL_HOURS: Record<SourceId, number> = { bcb: 6, tesouro: 24, yahoo: 6 };
-const SOURCES: SourceId[] = ['bcb', 'tesouro', 'yahoo'];
+export type SourceId = 'bcb' | 'tesouro';
+export const TTL_HOURS: Record<SourceId, number> = { bcb: 6, tesouro: 24 };
+const SOURCES: SourceId[] = ['bcb', 'tesouro'];
 
 export type RefreshStatus = 'ok' | 'cached' | 'erro';
 export interface RefreshReport {
@@ -25,9 +23,7 @@ export interface Quote {
 export type MarketSnapshot = Record<string, Quote>;
 
 export function sourceOf(key: string): SourceId {
-  if (key.startsWith('bcb.')) return 'bcb';
-  if (key.startsWith('tesouro.')) return 'tesouro';
-  return 'yahoo';
+  return key.startsWith('tesouro.') ? 'tesouro' : 'bcb';
 }
 
 const ageHours = (fetchedAt: string, now: Date) => (now.getTime() - new Date(fetchedAt).getTime()) / 3_600_000;
@@ -40,7 +36,6 @@ export async function refreshMarket(
   const adapters: Record<SourceId, () => Promise<CacheEntry[]>> = {
     bcb: () => fetchBcb(fetchFn, now),
     tesouro: () => fetchTesouro(fetchFn, now),
-    yahoo: () => fetchYahoo(fetchFn, now, CURATED_ASSETS.map((a) => a.symbol)),
   };
   const sources = {} as Record<SourceId, RefreshStatus>;
   for (const id of SOURCES) {
