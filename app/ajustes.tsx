@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import React, { useState } from 'react';
 import { Button, Muted, Screen, Section } from '../src/components/form';
 import { importBackup } from '../src/db/repo';
+import { AiSettings } from '../src/features/ai/AiSettings';
 import { shareExport } from '../src/features/settings/shareExport';
 import { useDb } from '../src/lib/db-context';
 
@@ -37,6 +38,7 @@ export default function Ajustes() {
 
   return (
     <Screen title="Ajustes">
+      <AiSettings />
       <Section>Dados</Section>
       <Button label="Importar backup" kind="soft" disabled={busy} onPress={onBackup} />
       <Button label="Exportar dados" kind="soft" disabled={busy} onPress={onExport} />

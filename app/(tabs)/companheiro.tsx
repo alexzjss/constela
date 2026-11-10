@@ -7,7 +7,11 @@ import type { InvestSettings } from '../../src/features/invest/settings';
 import { Disclaimer } from '../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../src/features/invest/FixedIncomeList';
 import { PlanCard } from '../../src/features/invest/PlanCard';
+import { useHoldings } from '../../src/features/invest/useHoldings';
 import { useInvest } from '../../src/features/invest/useInvest';
+import { AiCard } from '../../src/features/ai/AiCard';
+import { planContext, portfolioContext } from '../../src/ai/context';
+import { portfolioRisk } from '../../src/features/research/analysis';
 import { DiversifyCard } from '../../src/features/research/DiversifyCard';
 import { useResearch } from '../../src/features/research/useResearch';
 import { formatBRL, parseBRL } from '../../src/lib/money';
@@ -45,6 +49,7 @@ export default function Companheiro() {
   const insets = useSafeAreaInsets();
   const { settings, view, refreshing, refresh, update } = useInvest();
   const research = useResearch();
+  const holdings = useHoldings(view?.snapshot ?? null);
   const [showSim, setShowSim] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [hypText, setHypText] = useState({ cdb: '', lci: '', custody: '' });
@@ -87,6 +92,18 @@ export default function Companheiro() {
       <Text style={styles.muted}>Quanto você quer investir agora? Ajuste abaixo e veja onde colocar.</Text>
       <PlanCard view={view} />
       <DiversifyCard ctx={research.ctx} loading={research.loading} />
+      <AiCard
+        context={() => {
+          const nameOf = (sym: string) => research.ctx?.series[sym]?.name ?? sym;
+          const risk = research.ctx ? portfolioRisk(research.ctx.held, research.ctx.fx, holdings.view.summary.value) : null;
+          return `${planContext(view, settings.profile, settings.term)}\n\n${portfolioContext(holdings.view, risk, nameOf)}`;
+        }}
+        quick={[
+          { id: 'plano', label: 'Explicar a sugestão', question: 'Explique, em linguagem simples, por que a sugestão está dividida assim e o que ela leva em conta.' },
+          { id: 'carteira', label: 'Resumir minha carteira', question: 'Resuma minha carteira: onde estou concentrado, como estou rendendo contra o CDI e o que mais pesa no risco.' },
+          { id: 'rf', label: 'Comparar renda fixa', question: 'Compare as opções de renda fixa pelo retorno líquido e explique a diferença entre elas.' },
+        ]}
+      />
       <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
 
       <Pressable accessibilityRole="button" onPress={() => setShowSim((v) => !v)} style={styles.simToggle}>

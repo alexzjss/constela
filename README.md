@@ -6,6 +6,18 @@ Companheiro de investimentos para Android. Pesquise ativos, veja como eles se mo
 
 Roda inteiro no celular: sem servidor, sem conta, sem custo. Todo número vem de regras determinísticas; a IA (opcional, com a chave do próprio usuário) só explica o que o motor já calculou.
 
+## O que o app faz
+
+| Aba | Em uma frase |
+|---|---|
+| Carteira | Suas posições, aportes e rendimento contra o CDI e a inflação, mais o risco da carteira (volatilidade e posições que andam juntas). |
+| Pesquisar | Busca livre de ações, FIIs, ETFs e cripto; a ficha do ativo mostra a correlação com Ibovespa, S&P 500 e dólar, quem anda parecido, quem diversifica e o efeito na sua carteira. |
+| Companheiro | Onde colocar o próximo aporte (mix do perfil ajustado à carteira, renda fixa por retorno líquido de IR/IOF, ativos que mais reduzem o risco) e perguntas à IA. |
+
+**Como a correlação é calculada** (`src/engine/correlation.ts`): retornos semanais dos últimos 3 anos, ativos em dólar convertidos para reais, Pearson entre pares e beta contra os índices. Com menos de 26 semanas em comum o app não mostra o número. É histórico: não prevê o futuro.
+
+**IA opcional:** em Ajustes, escolha Claude ou Gemini e cole a sua chave (fica no cofre do Android, fora do backup). A IA só explica os números que o motor já calculou.
+
 ## Stack
 
 | Camada | Tecnologia |

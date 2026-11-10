@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { AiCard } from '../src/features/ai/AiCard';
+import { assetContext } from '../src/ai/context';
 import { Button, Field, Muted, Row, Screen, Section } from '../src/components/form';
 import { listHoldings } from '../src/db/holdings';
 import type { Holding, HoldingType } from '../src/domain/types';
@@ -127,6 +129,17 @@ export default function Ativo() {
           {a.diversifiers.map((s) => <Row key={s.id} title={s.name} sub={s.id} right={num2(s.correlation)} onPress={() => open(s.id)} />)}
         </>
       )}
+
+      {a ? (
+        <AiCard
+          title="Explicar com IA"
+          context={() => assetContext(a)}
+          quick={[
+            { id: 'ler', label: 'O que esses números dizem?', question: 'Explique o que estes números dizem sobre o ativo, para quem investe de forma geral.' },
+            { id: 'carteira', label: 'E na minha carteira?', question: 'Como este ativo se relaciona com a minha carteira, segundo a correlação e a volatilidade?' },
+          ]}
+        />
+      ) : null}
 
       <Section>Ações</Section>
       <Button label={watching ? 'Parar de acompanhar' : 'Acompanhar'} kind="soft" onPress={toggleWatch} />
