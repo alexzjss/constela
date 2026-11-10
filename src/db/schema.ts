@@ -11,6 +11,14 @@ export async function migrate(db: Db): Promise<void> {
     fetchedAt TEXT NOT NULL,
     extra TEXT
   )`);
+  // Histórico diário de preços por símbolo, guardado inteiro (JSON) para a correlação funcionar offline.
+  await db.run(`CREATE TABLE IF NOT EXISTS price_series (
+    symbol TEXT PRIMARY KEY,
+    currency TEXT NOT NULL,
+    name TEXT NOT NULL,
+    fetchedAt TEXT NOT NULL,
+    points TEXT NOT NULL
+  )`);
   await db.run(`CREATE TABLE IF NOT EXISTS holdings (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
