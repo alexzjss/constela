@@ -1,45 +1,28 @@
 import { DEFAULT_HYPOTHESES } from '../../../src/engine/invest/types';
 import { buildInvestView, explainFor, type ViewInput } from '../../../src/features/invest/view';
-import type { MarketSnapshot } from '../../../src/invest/refresh';
-import { tx } from '../../helpers/tx';
 
 const settings = { profile: 'moderado' as const, term: 12 as const, amountOverride: null, hyp: DEFAULT_HYPOTHESES };
 const q = (value: number, extra?: Record<string, number | null>) => ({
   value, asOf: '2026-11-06', fetchedAt: '2026-11-09T10:00:00.000Z', stale: false, extra,
 });
-const base: ViewInput = {
-  settings, snapshot: {}, txs: [], bills: [], goals: [], reserve: 700000, incomeSetting: 500000, today: '2026-11-09',
-};
+const base: ViewInput = { settings, snapshot: {} };
 
 test('snapshot vazio não lança e marca noData', () => {
   const v = buildInvestView(base);
   expect(v.noData).toBe(true);
   expect(v.recommendation.ranking).toEqual([]);
-  expect(v.assets).toHaveLength(13);
-  expect(v.assets.every((a) => a.priceBrl === null)).toBe(true);
   expect(v.asOf).toBeNull();
 });
 
 test('valor digitado vira o amount', () => {
   const v = buildInvestView({ ...base, settings: { ...settings, amountOverride: 50000 } });
   expect(v.amount).toBe(50000);
-  expect(v.defaultAmount).toBe(500000);
 });
 
-test('sem sobra: valor padrão 0 e aviso sem-valor', () => {
-  const v = buildInvestView({ ...base, incomeSetting: 100000, txs: [tx('2026-11-03', 200000, 'expense', 'lazer')] });
-  expect(v.defaultAmount).toBe(0);
+test('sem valor digitado, o amount é 0 e o plano avisa', () => {
+  const v = buildInvestView(base);
+  expect(v.amount).toBe(0);
   expect(v.recommendation.plan.warnings).toContain('sem-valor');
-});
-
-test('ativo em dólar é convertido; sem câmbio fica null', () => {
-  const snap: MarketSnapshot = { 'asset:VOO': q(100, { change12m: 0.1, dividendYield: 0.01 }), 'fx.usdbrl': q(5) };
-  const v = buildInvestView({ ...base, snapshot: snap });
-  const voo = v.assets.find((a) => a.symbol === 'VOO')!;
-  expect(voo.priceBrl).toBe(50000);
-  expect(voo.dividendYield).toBe(0.01);
-  const v2 = buildInvestView({ ...base, snapshot: { 'asset:VOO': q(100) } });
-  expect(v2.assets.find((a) => a.symbol === 'VOO')!.priceBrl).toBeNull();
 });
 
 test('com taxas, noData é false e explainFor devolve as linhas', () => {
@@ -64,23 +47,16 @@ test('ver a conta da renda fixa mostra fonte e data do dado', () => {
   expect(hip.value).toContain('até o prazo');
 });
 
-test('valor padrão separa o gasto que ainda deve acontecer no mês', () => {
-  // renda 5.000; nos 3 meses anteriores gastou 3.000 por mês; hoje (dia 9) gastou só 500
-  const hist = ['2026-08', '2026-09', '2026-10'].map((m) => tx(`${m}-10`, 300000, 'expense', 'lazer'));
-  const v = buildInvestView({ ...base, txs: [...hist, tx('2026-11-03', 50000, 'expense', 'lazer')] });
-  expect(v.defaultAmount).toBe(200000); // 5.000 - max(3.000, 500)
-});
-
 test('sem valor, a lista é só uma simulação de referência', () => {
-  const none = buildInvestView({ ...base, incomeSetting: 100000, txs: [tx('2026-11-03', 200000, 'expense', 'lazer')] });
-  expect(none.isReference).toBe(true);
-  expect(buildInvestView(base).isReference).toBe(false);
+  expect(buildInvestView(base).isReference).toBe(true);
+  expect(buildInvestView({ ...base, settings: { ...settings, amountOverride: 100000 } }).isReference).toBe(false);
 });
 
 test('carteira cadastrada entra no view e desvia o mix para o que falta', () => {
   const holdings = [{ id: 'h', type: 'tesouro' as const, name: 'Selic', invested: 900000, value: 900000, updatedAt: '2026-11-01' }];
-  const none = buildInvestView(base);
-  const withH = buildInvestView({ ...base, holdings });
+  const withValue = { ...base, settings: { ...settings, amountOverride: 100000 } };
+  const none = buildInvestView(withValue);
+  const withH = buildInvestView({ ...withValue, holdings });
   expect(none.portfolio).toBeNull();
   expect(withH.portfolio?.total).toBe(900000);
   const mix = (v: typeof none) => v.recommendation.classes.find((c) => c.cls === 'rendaFixa')!.amount;

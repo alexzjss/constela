@@ -1,41 +1,9 @@
 import type { Db } from './db';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export async function migrate(db: Db): Promise<void> {
   await db.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
-  await db.run(`CREATE TABLE IF NOT EXISTS transactions (
-    id TEXT PRIMARY KEY,
-    date TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    kind TEXT NOT NULL,
-    categoryId TEXT NOT NULL,
-    description TEXT NOT NULL,
-    source TEXT NOT NULL,
-    externalId TEXT UNIQUE,
-    needsReview INTEGER NOT NULL DEFAULT 0,
-    createdAt TEXT NOT NULL
-  )`);
-  await db.run(`CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date)`);
-  await db.run(`CREATE TABLE IF NOT EXISTS user_rules (
-    key TEXT PRIMARY KEY,
-    categoryId TEXT NOT NULL
-  )`);
-  await db.run(`CREATE TABLE IF NOT EXISTS bills (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    dueDay INTEGER NOT NULL,
-    categoryId TEXT NOT NULL
-  )`);
-  await db.run(`CREATE TABLE IF NOT EXISTS goals (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    target INTEGER NOT NULL,
-    startDate TEXT NOT NULL,
-    deadline TEXT NOT NULL,
-    saved INTEGER NOT NULL DEFAULT 0
-  )`);
   await db.run(`CREATE TABLE IF NOT EXISTS reference_rate (
     key TEXT PRIMARY KEY,
     value REAL NOT NULL,
@@ -43,21 +11,13 @@ export async function migrate(db: Db): Promise<void> {
     fetchedAt TEXT NOT NULL,
     extra TEXT
   )`);
-  await db.run(`CREATE TABLE IF NOT EXISTS income_sources (
-    id TEXT PRIMARY KEY,
+  // Histórico diário de preços por símbolo, guardado inteiro (JSON) para a correlação funcionar offline.
+  await db.run(`CREATE TABLE IF NOT EXISTS price_series (
+    symbol TEXT PRIMARY KEY,
+    currency TEXT NOT NULL,
     name TEXT NOT NULL,
-    type TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    day INTEGER NOT NULL,
-    startMonth TEXT NOT NULL,
-    endMonth TEXT,
-    active INTEGER NOT NULL DEFAULT 1
-  )`);
-  // Um mês já lançado nunca é lançado de novo, mesmo que o lançamento seja apagado.
-  await db.run(`CREATE TABLE IF NOT EXISTS income_runs (
-    sourceId TEXT NOT NULL,
-    month TEXT NOT NULL,
-    PRIMARY KEY (sourceId, month)
+    fetchedAt TEXT NOT NULL,
+    points TEXT NOT NULL
   )`);
   await db.run(`CREATE TABLE IF NOT EXISTS holdings (
     id TEXT PRIMARY KEY,
@@ -79,11 +39,12 @@ export async function migrate(db: Db): Promise<void> {
   await db.run(`INSERT OR IGNORE INTO holding_moves (id, holdingId, date, kind, amount)
     SELECT 'init-' || id, id, updatedAt, 'aporte', invested FROM holdings
     WHERE invested > 0 AND NOT EXISTS (SELECT 1 FROM holding_moves m WHERE m.holdingId = holdings.id)`);
-  await db.run(`CREATE TABLE IF NOT EXISTS month_snapshots (
-    month TEXT PRIMARY KEY,
-    accountBalance INTEGER,
-    invested INTEGER
-  )`);
+  // Versão 6: o app virou só investimentos. Some tudo de extrato, gastos, metas e renda.
+  for (const t of ['transactions', 'user_rules', 'bills', 'goals', 'income_sources', 'income_runs', 'month_snapshots']) {
+    await db.run(`DROP TABLE IF EXISTS ${t}`);
+  }
+  const cols = await db.all<{ name: string }>(`PRAGMA table_info(holdings)`);
+  if (!cols.some((c) => c.name === 'symbol')) await db.run(`ALTER TABLE holdings ADD COLUMN symbol TEXT`);
   await db.run(
     `INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`,
     [String(SCHEMA_VERSION)],

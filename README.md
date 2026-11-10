@@ -1,20 +1,22 @@
 # Paralelo
 
-> Nome provisório (sugestão; o repositório continua `money`).
+> Nome provisório (o repositório continua `money`).
 
-**Seu único rival é você.** App Android de finanças pessoais que compara você com as suas outras versões: o você do mês passado, o você que fez a escolha que você não fez, e o você de amanhã.
+Companheiro de investimentos para Android. Pesquise ativos, veja como eles se movem entre si e em relação à sua carteira, e descubra onde colocar o próximo aporte, com a conta sempre à mostra.
 
-Roda inteiro no celular: sem servidor, sem conta, sem custo. Todo número vem de regras determinísticas e mostra a própria conta.
+Roda inteiro no celular: sem servidor, sem conta, sem custo. Todo número vem de regras determinísticas; a IA (opcional, com a chave do próprio usuário) só explica o que o motor já calculou.
 
-## O que o app faz (v1)
+## O que o app faz
 
-| Peça | Em uma frase |
+| Aba | Em uma frase |
 |---|---|
-| Tela inicial | Score, gastos do mês contra o "fantasma" do mês passado e um botão para adicionar. |
-| Score aberto | Nota de 0 a 100 em 4 pilares, com a conta visível e a próxima ação que mais sobe a nota. |
-| Pode gastar hoje | Quanto dá para gastar hoje sem comprometer contas e metas. |
-| Diário de decisões | Dinheiro extra vira uma decisão; o app acompanha o "você paralelo" que escolheu diferente. |
-| Eras | Linha do tempo por fase de renda. |
+| Carteira | Suas posições, aportes e rendimento contra o CDI e a inflação, mais o risco da carteira (volatilidade e posições que andam juntas). |
+| Pesquisar | Busca livre de ações, FIIs, ETFs e cripto; a ficha do ativo mostra a correlação com Ibovespa, S&P 500 e dólar, quem anda parecido, quem diversifica e o efeito na sua carteira. |
+| Companheiro | Onde colocar o próximo aporte (mix do perfil ajustado à carteira, renda fixa por retorno líquido de IR/IOF, ativos que mais reduzem o risco) e perguntas à IA. |
+
+**Como a correlação é calculada** (`src/engine/correlation.ts`): retornos semanais dos últimos 3 anos, ativos em dólar convertidos para reais, Pearson entre pares e beta contra os índices. Com menos de 26 semanas em comum o app não mostra o número. É histórico: não prevê o futuro.
+
+**IA opcional:** em Ajustes, escolha Claude ou Gemini e cole a sua chave (fica no cofre do Android, fora do backup). A IA só explica os números que o motor já calculou.
 
 ## Stack
 
@@ -22,21 +24,9 @@ Roda inteiro no celular: sem servidor, sem conta, sem custo. Todo número vem de
 |---|---|
 | App | Expo (React Native + TypeScript), só Android |
 | Dados | SQLite no próprio aparelho |
-| Motor financeiro | TypeScript puro, testado, sem rede |
-| Texto para lançamento | Interpretador local por regras (sem IA) |
-| IA | Opcional e sob demanda: Gemini com a chave do próprio usuário |
-| Backup | Exportação para arquivo (JSON e CSV) |
-
-## Documentação
-
-0. [Proposta](docs/00-proposta.md): a ideia central e o posicionamento.
-1. [Visão](docs/01-visao.md): por que existe, metas e o que fica de fora.
-2. [Produto](docs/02-produto.md): telas e comportamento de cada peça.
-3. [Motor financeiro](docs/03-motor-financeiro.md): as fórmulas.
-4. [Arquitetura](docs/04-arquitetura.md): pastas, fluxo de dados e decisões técnicas.
-5. [Dados](docs/05-dados.md): entidades e regras de armazenamento.
-6. [Roadmap](docs/06-roadmap.md): marcos de entrega e questões em aberto.
-7. [Importar do Nubank](docs/07-nubank.md): como exportar seu extrato e usá-lo aqui.
+| Motor | TypeScript puro, testado, sem rede (`src/engine`) |
+| Mercado | Banco Central, Tesouro Transparente e Yahoo Finance, com cache local |
+| Backup | Exportação da carteira para JSON |
 
 ## Rodar e instalar
 
@@ -56,9 +46,3 @@ No celular:
 2. Em "Adicionar app", cole a URL deste repositório. O Obtainium baixa a Release mais recente e avisa quando sai uma nova.
 
 A chave de assinatura fica nos *Secrets* do repositório (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) e em backup local do dono. Sem ela o Android recusa atualizar o app instalado. Para gerar um APK local sem a chave de release: `npx expo prebuild --platform android` e `cd android && ./gradlew assembleRelease` (assina com a chave de debug).
-
-Para importar seus extratos: exporte o CSV no app do Nubank ([passo a passo](docs/07-nubank.md)), copie para o celular e use Ajustes › Importar extrato.
-
-## Estado
-
-M0 a M3 e a aba Investir (fase 1) implementados (início, adicionar, importar CSV do Nubank, exportar e importar backup, contas fixas, Pode gastar hoje, alerta de gasto fora do padrão, metas, reserva e a tela que explica o score). Decisões e linha do tempo ainda não existem. Veja o [roadmap](docs/06-roadmap.md).

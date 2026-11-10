@@ -19,7 +19,6 @@ export interface ClassAllocation {
 export interface Recommendation {
   plan: Plan;
   ranking: FixedIncomeResult[];
-  reserveProduct: ProductId | null;
   fixedProduct: ProductId | null;
   classes: ClassAllocation[];
 }
@@ -38,7 +37,6 @@ export function recommend(input: RecommendInput): Recommendation {
   });
   return {
     plan, ranking, classes,
-    reserveProduct: ranking.find((r) => r.liquidity === 'diaria')?.id ?? null,
     fixedProduct: ranking[0]?.id ?? null,
   };
 }

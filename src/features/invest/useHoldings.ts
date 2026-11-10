@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { listHoldingMoves, listHoldings } from '../../db/ledger';
+import { listHoldingMoves, listHoldings } from '../../db/holdings';
 import type { Holding, HoldingMove } from '../../domain/types';
 import { loadIndexes, type Indexes } from '../../invest/history';
 import type { MarketSnapshot } from '../../invest/refresh';

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Chips, Field, Label, Muted, Row, toField } from '../../components/form';
-import { deleteHolding, updateHolding } from '../../db/ledger';
+import { deleteHolding, updateHolding } from '../../db/holdings';
 import type { Holding, HoldingType } from '../../domain/types';
 import { HOLDING_TYPES, holdingTypeLabel } from '../../engine/holdings';
 import { fromBR, isRealDate, todayLocal } from '../../lib/dates';
 import { useDb } from '../../lib/db-context';
 import { formatBRL, parseBRL } from '../../lib/money';
 import { tokens } from '../../theme/tokens';
-import { createHolding, moveHolding } from '../ledger/actions';
+import { createHolding, moveHolding } from './actions';
 import type { HoldingRow, HoldingsView } from './holdingsView';
 
 const pct = (r: number | null) => (r === null ? '' : `${r >= 0 ? '+' : ''}${(r * 100).toFixed(1).replace('.', ',')}%`);
@@ -25,6 +25,7 @@ export function HoldingsSection({ view, onChange }: { view: HoldingsView; onChan
   const [creating, setCreating] = useState(false);
   const [type, setType] = useState<HoldingType>('tesouro');
   const [name, setName] = useState('');
+  const [symbol, setSymbol] = useState('');
   const [invested, setInvested] = useState('');
   const [current, setCurrent] = useState('');
   const [since, setSince] = useState(brDate(today));
@@ -98,6 +99,8 @@ export function HoldingsSection({ view, onChange }: { view: HoldingsView; onChan
           <Label>Nova posição</Label>
           <Chips<HoldingType> options={HOLDING_TYPES} value={type} onChange={setType} />
           <Field label="Nome" value={name} onChangeText={setName} placeholder="Tesouro Selic 2029" />
+          <Field label="Símbolo do ativo (opcional)" value={symbol} onChangeText={setSymbol} autoCapitalize="characters" autoCorrect={false} placeholder="PETR4.SA" />
+          <Muted>Com o símbolo, a posição entra nos cálculos de risco e correlação. Busque o símbolo certo na aba Pesquisar.</Muted>
           <View style={styles.pair}>
             <View style={styles.flex}><Field label="Aportado" value={invested} onChangeText={setInvested} keyboardType="decimal-pad" placeholder="1.000,00" /></View>
             <View style={styles.flex}><Field label="Vale hoje" value={current} onChangeText={setCurrent} keyboardType="decimal-pad" placeholder="1.050,00" /></View>
@@ -108,8 +111,8 @@ export function HoldingsSection({ view, onChange }: { view: HoldingsView; onChan
             label="Adicionar"
             disabled={!canCreate}
             onPress={async () => {
-              await createHolding(db, { type, name: name.trim(), invested: investedC as number, value: currentC as number }, today, sinceIso as string);
-              setCreating(false); setName(''); setInvested(''); setCurrent(''); setSince(brDate(today));
+              await createHolding(db, { type, name: name.trim(), invested: investedC as number, value: currentC as number, symbol: symbol.trim() || null }, today, sinceIso as string);
+              setCreating(false); setName(''); setSymbol(''); setInvested(''); setCurrent(''); setSince(brDate(today));
               onChange();
             }}
           />

@@ -1,32 +1,15 @@
-import type { Bill, Goal, Holding, Transaction } from '../../domain/types';
-import { essentialMonthlyAverage } from '../../engine/composite';
+import type { Holding } from '../../domain/types';
 import { PRODUCTS } from '../../engine/invest/fixedIncome';
 import { buildPortfolio, type PortfolioView } from '../../engine/invest/portfolio';
 import { recommend, type Recommendation } from '../../engine/invest/recommend';
-import type { AssetClass, ExplainLine, ProductId } from '../../engine/invest/types';
-import { canSpendToday, expectedMonthlyIncome } from '../../engine/today';
-import { CURATED_ASSETS } from '../../invest/assets';
+import type { ExplainLine, ProductId } from '../../engine/invest/types';
 import { ratesFromSnapshot, type MarketSnapshot } from '../../invest/refresh';
-import { monthOf, prevMonth } from '../../lib/dates';
 import { formatBRL, type Cents } from '../../lib/money';
 import type { InvestSettings } from './settings';
 
-export interface AssetRow {
-  symbol: string;
-  name: string;
-  cls: AssetClass;
-  priceBrl: Cents | null;
-  change12m: number | null;
-  dividendYield: number | null;
-  asOf: string | null;
-  stale: boolean;
-}
-
 export interface InvestView {
   amount: Cents;
-  defaultAmount: Cents;
   recommendation: Recommendation;
-  assets: AssetRow[];
   asOf: string | null;
   anyStale: boolean;
   noData: boolean;
@@ -38,62 +21,23 @@ export interface InvestView {
 export interface ViewInput {
   settings: InvestSettings;
   snapshot: MarketSnapshot;
-  txs: Transaction[];
-  bills: Bill[];
-  goals: Goal[];
   holdings?: Holding[];
-  reserve: Cents | null;
-  incomeSetting: Cents | null;
-  today: string;
-}
-
-/** Renda − o maior entre o gasto típico do mês e o já gasto + contas por vencer. */
-function savableAmount(txs: Transaction[], bills: Bill[], expectedIncome: Cents, today: string): Cents {
-  const spend = canSpendToday({ today, expectedIncome, bills, txs });
-  if (!spend) return 0;
-  const totals: number[] = [];
-  let m = monthOf(today);
-  for (let i = 0; i < 3; i++) {
-    m = prevMonth(m);
-    const sum = txs.filter((t) => t.kind === 'expense' && monthOf(t.date) === m).reduce((a, t) => a + t.amount, 0);
-    if (sum > 0) totals.push(sum);
-  }
-  const typical = totals.length ? totals.reduce((a, b) => a + b, 0) / totals.length : 0;
-  return Math.max(0, Math.min(spend.available, Math.round(expectedIncome - typical)));
 }
 
 export function buildInvestView(input: ViewInput): InvestView {
-  const { settings, snapshot, txs, bills, goals, holdings = [], reserve, incomeSetting, today } = input;
+  const { settings, snapshot, holdings = [] } = input;
   const portfolio = buildPortfolio(holdings, settings.profile);
-  const expectedIncome = expectedMonthlyIncome(txs, today, incomeSetting);
-  const defaultAmount = savableAmount(txs, bills, expectedIncome, today);
-  const amount = settings.amountOverride ?? defaultAmount;
+  const amount = settings.amountOverride ?? 0;
   const rates = ratesFromSnapshot(snapshot);
 
   const recommendation = recommend({
-    amount, profile: settings.profile, reserve, essentialMonthly: essentialMonthlyAverage(txs, today),
-    goals, today, term: settings.term, rates, hyp: settings.hyp,
+    amount, profile: settings.profile, term: settings.term, rates, hyp: settings.hyp,
     portfolio: portfolio?.byClass,
-  });
-
-  const fx = snapshot['fx.usdbrl']?.value ?? null;
-  const assets: AssetRow[] = CURATED_ASSETS.map((a) => {
-    const q = snapshot[`asset:${a.symbol}`];
-    let priceBrl: Cents | null = null;
-    if (q) {
-      if (a.currency === 'BRL') priceBrl = Math.round(q.value * 100);
-      else if (fx !== null) priceBrl = Math.round(q.value * fx * 100);
-    }
-    return {
-      symbol: a.symbol, name: a.name, cls: a.cls, priceBrl,
-      change12m: q?.extra?.change12m ?? null, dividendYield: q?.extra?.dividendYield ?? null,
-      asOf: q?.asOf ?? null, stale: q?.stale ?? false,
-    };
   });
 
   const quotes = Object.values(snapshot);
   return {
-    amount, defaultAmount, recommendation, assets, snapshot, portfolio,
+    amount, recommendation, snapshot, portfolio,
     asOf: quotes.reduce<string | null>((m, x) => (m === null || x.asOf > m ? x.asOf : m), null),
     anyStale: quotes.some((x) => x.stale),
     noData: recommendation.ranking.length === 0,
@@ -131,7 +75,7 @@ function sourceLines(view: InvestView, id: ProductId, term: number): ExplainLine
 
 const pct = (x: number | null) => (x === null ? '—' : `${(x * 100).toFixed(2).replace('.', ',')}%`);
 
-/** Conteúdo da tela "ver a conta". ref = fixed:{id} | asset:{symbol} | plan. */
+/** Conteúdo da tela "ver a conta". ref = fixed:{id} | plan. */
 export function explainFor(
   view: InvestView, ref: string,
 ): { title: string; lines: ExplainLine[] } | null {
@@ -150,25 +94,9 @@ export function explainFor(
       ],
     };
   }
-  if (ref.startsWith('asset:')) {
-    const symbol = ref.slice(6);
-    const a = view.assets.find((x) => x.symbol === symbol);
-    if (!a) return null;
-    return {
-      title: a.name,
-      lines: [
-        { label: 'Preço', value: a.priceBrl === null ? '—' : formatBRL(a.priceBrl, { cents: true }) },
-        { label: 'Variação em 12 meses', value: pct(a.change12m) },
-        { label: 'Dividend yield (12 meses)', value: `${pct(a.dividendYield)} (dividendos pagos ÷ preço)` },
-        { label: 'P/L', value: '—' },
-        { label: 'Fonte e data', value: `Yahoo Finance, dado de ${a.asOf ?? '—'}${a.stale ? ' (desatualizado)' : ''}` },
-        { label: 'Aviso', value: 'Indicador informativo. Rentabilidade passada não garante futura.' },
-      ],
-    };
-  }
   if (ref === 'plan') {
     const lines: ExplainLine[] = view.recommendation.plan.steps.map((s) => ({
-      label: s.kind === 'reserva' ? 'Reserva de emergência' : s.kind === 'meta' ? `Meta: ${s.goalName}` : view.portfolio ? 'Mix ajustado à sua carteira' : 'Mix do perfil',
+      label: view.portfolio ? 'Mix ajustado à sua carteira' : 'Mix do perfil',
       value: formatBRL(s.amount, { cents: true }),
     }));
     return { title: 'Sugestão do mês', lines };

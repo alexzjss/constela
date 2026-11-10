@@ -1,6 +1,5 @@
 import type { Holding } from '../../src/domain/types';
-import { applyMove, gainPct, investedInMonth, summarizeHoldings } from '../../src/engine/holdings';
-import { tx } from '../helpers/tx';
+import { applyMove, gainPct, summarizeHoldings } from '../../src/engine/holdings';
 
 const h = (o: Partial<Holding> = {}): Holding => ({
   id: 'h1', type: 'tesouro', name: 'Selic', invested: 100000, value: 110000, updatedAt: '2026-11-01', ...o,
@@ -21,11 +20,4 @@ test('aporte soma nos dois lados; resgate sai pelo custo médio', () => {
   expect(applyMove(h(), 'aporte', 20000, '2026-11-10')).toMatchObject({ invested: 120000, value: 130000 });
   expect(applyMove(h(), 'resgate', 55000, '2026-11-10')).toMatchObject({ invested: 50000, value: 55000 });
   expect(applyMove(h(), 'resgate', 999999, '2026-11-10')).toMatchObject({ invested: 0, value: 0 });
-});
-
-test('investedInMonth: aportes menos resgates', () => {
-  const a = { ...tx('2026-11-02', 30000, 'internal', 'investimento'), description: 'Aporte Selic' };
-  const r = { ...tx('2026-11-09', 10000, 'internal', 'investimento'), description: 'Resgate Selic' };
-  const other = { ...tx('2026-10-09', 99999, 'internal', 'investimento'), description: 'Aporte Selic' };
-  expect(investedInMonth([a, r, other, tx('2026-11-03', 500, 'expense', 'comida')], '2026-11')).toBe(20000);
 });

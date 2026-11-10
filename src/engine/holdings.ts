@@ -1,5 +1,4 @@
-import type { Holding, HoldingType, Transaction } from '../domain/types';
-import { monthOf } from '../lib/dates';
+import type { Holding, HoldingType } from '../domain/types';
 import type { Cents } from '../lib/money';
 
 export const HOLDING_TYPES: { id: HoldingType; label: string }[] = [
@@ -66,14 +65,4 @@ export function applyMove(h: Holding, move: 'aporte' | 'resgate', amount: Cents,
     invested: Math.max(0, h.invested - Math.round(h.invested * ratio)),
     updatedAt: today,
   };
-}
-
-/** Aportes menos resgates lançados no mês (lançamentos internos de categoria "investimento"). */
-export function investedInMonth(txs: Transaction[], month: string): Cents {
-  let net = 0;
-  for (const t of txs) {
-    if (t.kind !== 'internal' || t.categoryId !== 'investimento' || monthOf(t.date) !== month) continue;
-    net += t.description.startsWith('Resgate') ? -t.amount : t.amount;
-  }
-  return net;
 }
