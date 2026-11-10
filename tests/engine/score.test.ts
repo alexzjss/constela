@@ -1,0 +1,45 @@
+import { provisionalScore } from '../../src/engine/score';
+import { addDays } from '../../src/lib/dates';
+import { tx } from '../helpers/tx';
+
+const TODAY = '2026-11-09';
+
+function fixture() {
+  const txs = [
+    tx('2026-10-12', 100000, 'income', 'renda'),
+    tx('2026-10-15', 68600, 'expense', 'moradia'),
+  ];
+  for (let i = 0; i < 14; i++) txs.push(tx(addDays(TODAY, -i), 100, 'expense', 'comida'));
+  return txs;
+}
+
+test('folga máxima quando sobram 30% da renda', () => {
+  const s = provisionalScore(fixture(), TODAY);
+  expect(s.folga).toBe(30);
+  expect(s.provisional).toBe(true);
+});
+
+test('registros em dia dão pontos de constância', () => {
+  const full = provisionalScore(fixture(), TODAY);
+  const none = provisionalScore([tx('2026-10-12', 100000, 'income', 'renda')], TODAY);
+  expect(full.constancia).toBeGreaterThan(none.constancia);
+  expect(full.constancia).toBeLessThanOrEqual(20);
+});
+
+test('renda zero zera a folga, sem NaN', () => {
+  const s = provisionalScore([tx('2026-11-08', 100, 'expense', 'comida')], TODAY);
+  expect(s.folga).toBe(0);
+  expect(Number.isFinite(s.total)).toBe(true);
+});
+
+test('sem nenhum lançamento o total é um inteiro de 0 a 100', () => {
+  const s = provisionalScore([], TODAY);
+  expect(Number.isInteger(s.total)).toBe(true);
+  expect(s.total).toBeGreaterThanOrEqual(0);
+  expect(s.total).toBeLessThanOrEqual(100);
+});
+
+test('total é (folga + constância) * 2', () => {
+  const s = provisionalScore(fixture(), TODAY);
+  expect(s.total).toBe(Math.round((s.folga + s.constancia) * 2));
+});
