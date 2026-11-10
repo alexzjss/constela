@@ -2,7 +2,7 @@ import type { Db } from '../../db/db';
 import {
   addHolding, addHoldingMove, listIncomeRuns, listIncomeSources, markIncomeRun, updateHolding,
 } from '../../db/ledger';
-import { getSetting, insertTransaction } from '../../db/repo';
+import { addToGoal, getSetting, insertTransaction } from '../../db/repo';
 import type { Holding, HoldingType } from '../../domain/types';
 import { applyMove } from '../../engine/holdings';
 import { dueRuns, expectedFromSources, incomeTypeLabel } from '../../engine/income';
@@ -51,6 +51,23 @@ export async function createHolding(
   const h = await addHolding(db, { ...input, updatedAt: today });
   if (input.invested > 0) await addHoldingMove(db, { holdingId: h.id, date: since, kind: 'aporte', amount: input.invested });
   return h;
+}
+
+export type Registration =
+  | { kind: 'goal'; goalId: string; amount: Cents }
+  | { kind: 'existing'; holding: Holding; amount: Cents }
+  | { kind: 'new'; type: HoldingType; name: string; amount: Cents };
+
+/** O usuário aceitou uma parte da sugestão e investiu de fato: grava onde e quanto. */
+export async function registerInvestment(db: Db, r: Registration, today: string): Promise<void> {
+  if (r.kind === 'goal') {
+    await addToGoal(db, r.goalId, r.amount);
+  } else if (r.kind === 'existing') {
+    await moveHolding(db, r.holding, 'aporte', r.amount, today);
+  } else {
+    const h = await createHolding(db, { type: r.type, name: r.name, invested: 0, value: 0 }, today);
+    await moveHolding(db, h, 'aporte', r.amount, today);
+  }
 }
 
 /** Renda esperada digitada; sem ela, a soma dos ganhos recorrentes do mês; sem nenhum, null. */

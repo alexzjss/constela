@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { PortfolioRow } from '../../engine/invest/portfolio';
 import { formatBRL } from '../../lib/money';
 import { tokens } from '../../theme/tokens';
@@ -9,8 +9,8 @@ import type { InvestView } from './view';
 const STATUS: Record<PortfolioRow['status'], string> = { abaixo: 'abaixo da faixa', dentro: 'na faixa', acima: 'acima da faixa' };
 const pct = (n: number) => `${Math.round(n)}%`;
 
-/** Carteira cadastrada em Meus dados contra a meta do perfil. */
-export function PortfolioCard({ view, onEdit }: { view: InvestView; onEdit(): void }) {
+/** Carteira cadastrada em Investimentos contra a meta do perfil. */
+export function PortfolioCard({ view }: { view: InvestView }) {
   const p = view.portfolio;
   return (
     <View style={styles.card}>
@@ -28,11 +28,8 @@ export function PortfolioCard({ view, onEdit }: { view: InvestView; onEdit(): vo
           ))}
         </>
       ) : (
-        <Text style={styles.muted}>Cadastre o que você já tem investido para a sugestão levar sua carteira em conta.</Text>
+        <Text style={styles.muted}>Cadastre suas posições acima para a sugestão levar sua carteira em conta.</Text>
       )}
-      <Pressable accessibilityRole="button" onPress={onEdit} style={styles.btn}>
-        <Text style={styles.btnText}>{p ? 'Editar investimentos' : 'Cadastrar investimentos'}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -44,6 +41,4 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, gap: 8 },
   label: { fontFamily: tokens.font.body, fontSize: 14, color: tokens.color.text },
   value: { fontFamily: tokens.font.body, fontSize: 13, color: tokens.color.textMuted, flexShrink: 1, textAlign: 'right' },
-  btn: { minHeight: 44, borderRadius: tokens.radius.pill, backgroundColor: tokens.color.primary, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  btnText: { fontFamily: tokens.font.bodySemi, fontSize: 14, color: tokens.color.onPrimary },
 });

@@ -36,14 +36,8 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="adicionar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ajustes" />
-          <Stack.Screen name="contas" />
           <Stack.Screen name="score" />
-          <Stack.Screen name="metas" />
           <Stack.Screen name="conta" />
-          <Stack.Screen name="dados" />
-          <Stack.Screen name="mes" />
-          <Stack.Screen name="lancamento" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="renda" />
           <Stack.Screen name="entrada" />
         </Stack>
       </DbProvider>

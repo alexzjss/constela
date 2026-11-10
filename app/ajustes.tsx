@@ -1,20 +1,18 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDb } from '../src/lib/db-context';
+import { Button, Muted, Screen, Section } from '../src/components/form';
 import { importBackup } from '../src/db/repo';
+import { ContasSection } from '../src/features/settings/ContasSection';
 import { importCsvFiles } from '../src/features/settings/importCsv';
+import { MetasSection } from '../src/features/settings/MetasSection';
+import { NumbersSection } from '../src/features/settings/NumbersSection';
 import { shareExport } from '../src/features/settings/shareExport';
 import { NubankFormatError } from '../src/ingest/nubank';
-import { tokens } from '../src/theme/tokens';
+import { useDb } from '../src/lib/db-context';
 
 export default function Ajustes() {
   const db = useDb();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -60,52 +58,18 @@ export default function Ajustes() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-      <View style={styles.topRow}>
-        <Text style={styles.title}>Ajustes</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()} style={styles.close}>
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-      </View>
-      <Pressable accessibilityRole="button" disabled={busy} onPress={onImport} style={[styles.primary, busy && styles.off]}>
-        <Text style={styles.primaryText}>Importar extrato</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/dados')} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Meus dados</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/renda')} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Ganhos e salários</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/mes')} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Mês a mês</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/contas')} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Contas fixas e renda</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/metas')} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Metas e reserva</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" disabled={busy} onPress={onBackup} style={[styles.secondary, busy && styles.off]}>
-        <Text style={styles.secondaryText}>Importar backup</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" disabled={busy} onPress={onExport} style={[styles.secondary, busy && styles.off]}>
-        <Text style={styles.secondaryText}>Exportar dados</Text>
-      </Pressable>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-    </View>
+    <Screen title="Ajustes">
+      <Section>Seus números</Section>
+      <NumbersSection />
+      <Section>Contas fixas</Section>
+      <ContasSection />
+      <Section>Metas</Section>
+      <MetasSection />
+      <Section>Dados</Section>
+      <Button label="Importar extrato" disabled={busy} onPress={onImport} />
+      <Button label="Importar backup" kind="soft" disabled={busy} onPress={onBackup} />
+      <Button label="Exportar dados" kind="soft" disabled={busy} onPress={onExport} />
+      {message ? <Muted>{message}</Muted> : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: tokens.color.surface, paddingHorizontal: 20, gap: 16 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { fontFamily: tokens.font.display, fontSize: 28, color: tokens.color.text },
-  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  closeText: { fontSize: 22, color: tokens.color.text },
-  primary: { height: 60, borderRadius: 30, backgroundColor: tokens.color.primary, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { fontFamily: tokens.font.bodySemi, fontSize: 16, color: tokens.color.onPrimary },
-  secondary: { height: 56, borderRadius: 28, backgroundColor: tokens.color.surfaceTint, alignItems: 'center', justifyContent: 'center' },
-  secondaryText: { fontFamily: tokens.font.bodySemi, fontSize: 16, color: tokens.color.primary },
-  off: { opacity: 0.5 },
-  message: { fontFamily: tokens.font.bodyMedium, fontSize: 15, color: tokens.color.text, paddingTop: 8 },
-});

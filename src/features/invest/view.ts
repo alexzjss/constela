@@ -32,7 +32,7 @@ export interface InvestView {
   noData: boolean;
   isReference: boolean; // sem valor: ranking calculado sobre R$ 1.000 de referência
   snapshot: MarketSnapshot;
-  portfolio: PortfolioView | null; // carteira cadastrada em Meus dados
+  portfolio: PortfolioView | null; // carteira cadastrada em Investimentos
 }
 
 export interface ViewInput {

@@ -1,13 +1,17 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { brDate, Button, Field, Label, Muted, Screen, Section, toField } from '../src/components/form';
+import { brDate, Button, Chips, Field, Label, Muted, Screen, Section, toField } from '../src/components/form';
 import { categoryById } from '../src/domain/categories';
-import type { Transaction } from '../src/domain/types';
+import type { Holding, HoldingType, Transaction } from '../src/domain/types';
+import { listHoldings } from '../src/db/ledger';
+import { HOLDING_TYPES } from '../src/engine/holdings';
 import { getTransaction } from '../src/db/repo';
 import { Disclaimer } from '../src/features/invest/Disclaimer';
-import { buildParts, markHandled } from '../src/features/invest/entrada';
+import { buildParts, markHandled, type Part } from '../src/features/invest/entrada';
 import { useInvest } from '../src/features/invest/useInvest';
+import { registerInvestment } from '../src/features/ledger/actions';
+import { todayLocal } from '../src/lib/dates';
 import { useDb } from '../src/lib/db-context';
 import { formatBRL, parseBRL } from '../src/lib/money';
 import { tokens } from '../src/theme/tokens';
@@ -22,6 +26,14 @@ export default function Entrada() {
   const [forced, setForced] = useState<number | undefined>(undefined);
   const { view } = useInvest(forced);
   const seeded = useRef(false);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [done, setDone] = useState<Set<string>>(new Set());
+  const [pick, setPick] = useState<string>('new'); // id da posição ou 'new'
+  const [newType, setNewType] = useState<HoldingType>('tesouro');
+  const [newName, setNewName] = useState('');
+  const [partAmount, setPartAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) void getTransaction(db, id).then(setIncome);
@@ -36,9 +48,43 @@ export default function Entrada() {
     setForced(start);
   }, [view, income]);
 
-  const done = async () => {
+  const finish = async () => {
     if (id) await markHandled(db, id);
     router.back();
+  };
+
+  const openPart = async (p: Part) => {
+    setError(null);
+    const hs = await listHoldings(db);
+    setHoldings(hs);
+    const t = p.target;
+    const same = t.kind === 'holding' ? hs.find((h) => h.type === t.type && h.name === t.name) : undefined;
+    setPick(same?.id ?? 'new');
+    if (t.kind === 'holding') { setNewType(t.type); setNewName(t.name); }
+    setPartAmount(toField(p.amount));
+    setOpenKey(p.key);
+  };
+
+  const confirm = async (p: Part) => {
+    const amount = parseBRL(partAmount);
+    if (amount === null || amount <= 0) return;
+    const today = todayLocal();
+    try {
+      if (p.target.kind === 'goal') {
+        await registerInvestment(db, { kind: 'goal', goalId: p.target.goalId, amount }, today);
+      } else if (pick !== 'new') {
+        const holding = holdings.find((h) => h.id === pick);
+        if (!holding) return;
+        await registerInvestment(db, { kind: 'existing', holding, amount }, today);
+      } else {
+        if (newName.trim() === '') { setError('Dê um nome à posição.'); return; }
+        await registerInvestment(db, { kind: 'new', type: newType, name: newName.trim(), amount }, today);
+      }
+      setDone((d) => new Set(d).add(p.key));
+      setOpenKey(null);
+    } catch {
+      setError('Não consegui registrar. Tente de novo.');
+    }
   };
 
   if (!income) return <Screen title="Onde investir"><Label>Carregando…</Label></Screen>;
@@ -69,20 +115,49 @@ export default function Entrada() {
       {view?.recommendation.plan.warnings.includes('reserva-baixa') ? (
         <Muted>Sua reserva está abaixo de 6 meses, então ela vem primeiro.</Muted>
       ) : null}
-      {parts.map((p) => (
-        <View key={p.key} style={styles.part}>
-          <View style={styles.partHead}>
-            <Text style={styles.partLabel}>{p.label}</Text>
-            {p.key.startsWith('mix') ? null : <Text style={styles.partValue}>{formatBRL(p.amount)}</Text>}
+      {parts.map((p) => {
+        const isDone = done.has(p.key);
+        const isOpen = openKey === p.key;
+        return (
+          <View key={p.key} style={styles.part}>
+            <View style={styles.partHead}>
+              <Text style={styles.partLabel}>{p.label}</Text>
+              {p.key.startsWith('mix') ? null : <Text style={styles.partValue}>{formatBRL(p.amount)}</Text>}
+            </View>
+            {p.lines.map((l, i) => <Text key={i} style={styles.partLine}>{l}</Text>)}
+            {isDone ? <Text style={styles.ok}>✓ Registrado</Text> : null}
+            {!isDone && !isOpen ? <Button label={p.target.kind === 'goal' ? 'Guardei na meta' : 'Investi'} kind="soft" onPress={() => openPart(p)} /> : null}
+            {isOpen ? (
+              <View style={styles.form}>
+                {p.target.kind === 'holding' ? (
+                  <>
+                    <Label>Em qual posição?</Label>
+                    <Chips<string>
+                      options={[...holdings.map((h) => ({ id: h.id, label: h.name })), { id: 'new', label: 'Nova posição' }]}
+                      value={pick}
+                      onChange={setPick}
+                    />
+                    {pick === 'new' ? (
+                      <>
+                        <Chips<HoldingType> options={HOLDING_TYPES} value={newType} onChange={setNewType} />
+                        <Field label="Nome da posição" value={newName} onChangeText={setNewName} placeholder="Tesouro Selic 2029" />
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+                <Field label="Quanto foi investido" value={partAmount} onChangeText={setPartAmount} keyboardType="decimal-pad" />
+                {error ? <Label>{error}</Label> : null}
+                <Button label="Registrar" disabled={!(parseBRL(partAmount) && (parseBRL(partAmount) as number) > 0)} onPress={() => confirm(p)} />
+                <Button label="Cancelar" kind="soft" onPress={() => setOpenKey(null)} />
+              </View>
+            ) : null}
           </View>
-          {p.lines.map((l, i) => <Text key={i} style={styles.partLine}>{l}</Text>)}
-        </View>
-      ))}
-      {view?.noData ? <Muted>Sem taxas em cache. Abra a aba Investir com internet para atualizar.</Muted> : null}
+        );
+      })}
+      {view?.noData ? <Muted>Sem taxas em cache. Abra a aba Investimentos com internet para atualizar.</Muted> : null}
 
-      <Button label="Já investi — registrar em Meus dados" onPress={async () => { await done(); router.push('/dados'); }} />
-      <Button label="Ver na aba Investir" kind="soft" onPress={async () => { await done(); router.replace('/investir'); }} />
-      <Button label="Dispensar" kind="soft" onPress={done} />
+      <Button label={done.size > 0 ? 'Concluir' : 'Dispensar'} onPress={finish} />
+      <Button label="Ver meus investimentos" kind="soft" onPress={async () => { await finish(); router.push('/investimentos'); }} />
       <Disclaimer />
     </Screen>
   );
@@ -96,5 +171,7 @@ const styles = StyleSheet.create({
   partHead: { flexDirection: 'row', justifyContent: 'space-between' },
   partLabel: { fontFamily: tokens.font.bodySemi, fontSize: 16, color: tokens.color.text, flexShrink: 1 },
   partValue: { fontFamily: tokens.font.bodySemi, fontSize: 16, color: tokens.color.text },
+  form: { gap: 12, marginTop: 8 },
+  ok: { fontFamily: tokens.font.bodySemi, fontSize: 14, color: tokens.color.primary },
   partLine: { fontFamily: tokens.font.body, fontSize: 13, color: tokens.color.textMuted },
 });

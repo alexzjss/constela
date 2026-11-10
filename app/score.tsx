@@ -21,13 +21,13 @@ function pillars(s: Score): Pillar[] {
     {
       name: 'Reserva', points: s.reserva, max: 30,
       line: d.reserveMonths === null ? 'Reserva não informada' : `Cobre ${dec(d.reserveMonths)} meses de gasto essencial`,
-      action: d.reserveMonths === null ? { label: 'Informar', to: '/metas' } : undefined,
+      action: d.reserveMonths === null ? { label: 'Informar', to: '/ajustes' } : undefined,
     },
     { name: 'Constância', points: s.constancia, max: 20, line: `${d.coveredDays} de 14 dias registrados` },
     {
       name: 'Rumo', points: s.rumo, max: 20,
       line: d.goalsPct === null ? 'Sem metas' : `${Math.round(d.goalsPct * 100)}% do planejado até hoje`,
-      action: d.goalsPct === null ? { label: 'Criar meta', to: '/metas' } : undefined,
+      action: d.goalsPct === null ? { label: 'Criar meta', to: '/ajustes' } : undefined,
     },
   ];
 }
