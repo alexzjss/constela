@@ -38,7 +38,7 @@ export interface ScoreInput {
 const RESERVE_TARGET_MONTHS = 6;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-function goalRatio(g: Goal, today: string): number {
+export function goalRatio(g: Goal, today: string): number {
   const total = Math.max(1, daysBetween(g.startDate, g.deadline));
   const elapsed = Math.min(total, Math.max(0, daysBetween(g.startDate, today)));
   const planned = (g.target * elapsed) / total;
