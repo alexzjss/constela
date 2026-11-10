@@ -62,6 +62,22 @@ Para cada categoria: compara o acumulado no mês com a mediana do acumulado **at
 
 **Revisita**: cada opção tem uma taxa de referência (por exemplo, % do CDI). O valor atual de cada alternativa é o valor aplicado corrigido pela série diária do Banco Central (API pública SGS) entre a data da decisão e hoje. O app deixa claro que é uma estimativa por taxa de referência, bruta de impostos, e não o saldo real da aplicação.
 
+## Investir
+
+A aba Investir cruza o que sobra no mês com taxas públicas. Tudo é estimativa educativa.
+
+**Plano em cascata** (`src/engine/invest/allocation.ts`), sobre o valor a investir (o que sobra no mês, editável):
+
+1. Reserva abaixo de 3 meses: 100% vai para a reserva, até a lacuna de 6 meses de gasto essencial. Entre 3 e 6 meses: 50%.
+2. Metas atrasadas com prazo menor que 12 meses recebem a parcela mensal que falta.
+3. O resto segue o mix do perfil (conservador 90/5/5/0/0, moderado 60/15/15/8/2, arrojado 30/20/25/20/5 em renda fixa/FIIs/ações BR/exterior/cripto), mostrado como faixa de ±5 pontos.
+
+Reserva desconhecida não bloqueia: o app avisa e segue. A regra de dívida com juros ainda não existe, porque o app não guarda dívidas.
+
+**Renda fixa líquida** (`fixedIncome.ts`): ganho bruto pela taxa de referência no prazo (6, 12 ou 24 meses; 365 dias por ano), menos IR regressivo (22,5%, 20%, 17,5%, 15%), IOF (só abaixo de 30 dias), e custódia B3 de 0,2% a.a. nos títulos do Tesouro. Poupança e LCI/LCA não pagam IR. CDB (100% do CDI) e LCI/LCA (90% do CDI) são hipóteses editáveis, porque não há API pública. O Tesouro carrega o título até o prazo; IPCA+ usa o IPCA de 12 meses mantido constante.
+
+**Fontes** (todas gratuitas, sem chave): Banco Central SGS (Selic 432, CDI 4389, IPCA 433, TR 226), Tesouro Transparente (CSV de taxas) e Yahoo Finance (B3, exterior, cripto e dólar). Cada fonte tem cache próprio (6 h; Tesouro 24 h) e falha sozinha.
+
 ## Eras
 
 - Renda recorrente: lançamentos de ganho marcados como recorrentes, ou a mesma origem com valor parecido em 2 meses seguidos.

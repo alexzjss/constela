@@ -18,7 +18,7 @@ Banco SQLite dentro do app, no próprio aparelho.
 | `decision_review` | Revisita | data, valor atual de cada opção |
 | `score_snapshot` | Score do dia | total, pilares, dados de entrada (JSON), provisório |
 | `insight` | Aviso ou resumo | tipo, texto, dados usados, lido |
-| `reference_rate` | Série do Banco Central | série, data, valor |
+| `reference_rate` | Cache de taxas e cotações (Banco Central, Tesouro, Yahoo) | key, value, asOf, fetchedAt, extra (JSON) |
 
 ## Relações
 
