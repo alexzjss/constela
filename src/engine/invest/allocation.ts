@@ -24,6 +24,35 @@ export function splitByMix(total: Cents, profile: Profile): Record<AssetClass, C
   return out;
 }
 
+/**
+ * Reparte `amount` priorizando as classes mais abaixo da meta do perfil, contando o que o usuário já tem.
+ * Classe acima da meta não recebe nada. Sem lacuna nenhuma, cai no mix puro.
+ */
+export function rebalanceSplit(
+  amount: Cents, profile: Profile, portfolio: Record<AssetClass, Cents>,
+): Record<AssetClass, Cents> {
+  const mix = PROFILE_MIX[profile];
+  const held = ASSET_CLASSES.reduce((a, c) => a + portfolio[c], 0);
+  const total = held + amount;
+  const gap = {} as Record<AssetClass, number>;
+  let sumGap = 0;
+  let biggest: AssetClass = ASSET_CLASSES[0];
+  for (const c of ASSET_CLASSES) {
+    gap[c] = Math.max(0, (total * mix[c]) / 100 - portfolio[c]);
+    sumGap += gap[c];
+    if (gap[c] > gap[biggest]) biggest = c;
+  }
+  if (sumGap <= 0) return splitByMix(amount, profile);
+  const out = {} as Record<AssetClass, Cents>;
+  let used = 0;
+  for (const c of ASSET_CLASSES) {
+    out[c] = Math.floor((amount * gap[c]) / sumGap);
+    used += out[c];
+  }
+  out[biggest] += amount - used;
+  return out;
+}
+
 export function classRange(pct: number): { min: number; max: number } | null {
   if (pct <= 0) return null;
   return { min: Math.max(0, pct - 5), max: Math.min(100, pct + 5) };
@@ -42,6 +71,8 @@ export interface PlanInput {
   essentialMonthly: Cents;
   goals: Goal[];
   today: string;
+  /** Quanto já está investido em cada classe; sem isso vale o mix puro do perfil. */
+  portfolio?: Record<AssetClass, Cents>;
 }
 
 export interface Plan {
@@ -53,7 +84,7 @@ export interface Plan {
 const RESERVE_TARGET_MONTHS = 6;
 
 export function planAllocation(input: PlanInput): Plan {
-  const { amount, profile, reserve, essentialMonthly, goals, today } = input;
+  const { amount, profile, reserve, essentialMonthly, goals, today, portfolio } = input;
   if (amount <= 0) return { steps: [], warnings: ['sem-valor'], reserveMonths: null };
 
   const steps: PlanStep[] = [];
@@ -88,6 +119,9 @@ export function planAllocation(input: PlanInput): Plan {
     left -= amt;
   }
 
-  if (left > 0) steps.push({ kind: 'mix', amount: left, byClass: splitByMix(left, profile) });
+  if (left > 0) steps.push({
+      kind: 'mix', amount: left,
+      byClass: portfolio ? rebalanceSplit(left, profile, portfolio) : splitByMix(left, profile),
+    });
   return { steps, warnings, reserveMonths };
 }

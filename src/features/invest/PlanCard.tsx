@@ -32,7 +32,7 @@ export function PlanCard({ view }: { view: InvestView }) {
           <Text style={styles.value}>{formatBRL(s.amount)}</Text>
         </View>
       ))}
-      <Text style={styles.sub}>Mix do perfil</Text>
+      <Text style={styles.sub}>{view.portfolio ? 'Mix do perfil, ajustado à sua carteira' : 'Mix do perfil'}</Text>
       {classes.map((c) => (
         <View key={c.cls} style={styles.row}>
           <Text style={styles.label}>{CLASS_LABEL[c.cls]}</Text>

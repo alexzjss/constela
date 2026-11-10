@@ -76,3 +76,14 @@ test('sem valor, a lista é só uma simulação de referência', () => {
   expect(none.isReference).toBe(true);
   expect(buildInvestView(base).isReference).toBe(false);
 });
+
+test('carteira cadastrada entra no view e desvia o mix para o que falta', () => {
+  const holdings = [{ id: 'h', type: 'tesouro' as const, name: 'Selic', invested: 900000, value: 900000, updatedAt: '2026-11-01' }];
+  const none = buildInvestView(base);
+  const withH = buildInvestView({ ...base, holdings });
+  expect(none.portfolio).toBeNull();
+  expect(withH.portfolio?.total).toBe(900000);
+  const mix = (v: typeof none) => v.recommendation.classes.find((c) => c.cls === 'rendaFixa')!.amount;
+  expect(mix(withH)).toBeLessThan(mix(none));
+  expect(explainFor(withH, 'plan')!.lines.map((l) => l.label)).toContain('Mix ajustado à sua carteira');
+});

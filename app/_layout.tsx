@@ -8,6 +8,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { Db } from '../src/db/db';
 import { openExpoDb } from '../src/db/expo';
 import { migrate } from '../src/db/schema';
+import { materializeIncome } from '../src/features/ledger/actions';
+import { todayLocal } from '../src/lib/dates';
 import { DbProvider } from '../src/lib/db-context';
 
 export default function RootLayout() {
@@ -20,6 +22,7 @@ export default function RootLayout() {
     (async () => {
       const d = await openExpoDb();
       await migrate(d);
+      await materializeIncome(d, todayLocal());
       setDb(d);
     })();
   }, []);
@@ -37,6 +40,11 @@ export default function RootLayout() {
           <Stack.Screen name="score" />
           <Stack.Screen name="metas" />
           <Stack.Screen name="conta" />
+          <Stack.Screen name="dados" />
+          <Stack.Screen name="mes" />
+          <Stack.Screen name="lancamento" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="renda" />
+          <Stack.Screen name="entrada" />
         </Stack>
       </DbProvider>
     </SafeAreaProvider>

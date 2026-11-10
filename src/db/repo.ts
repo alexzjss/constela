@@ -1,6 +1,7 @@
 import type { Bill, Draft, Goal, Source, Transaction } from '../domain/types';
 import type { ImportedRow } from '../ingest/nubank';
 import type { Db } from './db';
+import { exportLedger, importLedger, type LedgerBackup } from './ledger';
 
 type Row = Omit<Transaction, 'needsReview'> & { needsReview: number };
 
@@ -53,6 +54,23 @@ export async function importRows(
   return { added, skipped: rows.length - added };
 }
 
+export async function getTransaction(db: Db, id: string): Promise<Transaction | null> {
+  const rows = await db.all<Row>(`SELECT * FROM transactions WHERE id = ?`, [id]);
+  return rows[0] ? toTx(rows[0]) : null;
+}
+
+/** Edita um lançamento já salvo. Se o usuário mexe, deixa de precisar de revisão. */
+export async function updateTransaction(db: Db, id: string, d: Draft): Promise<void> {
+  await db.run(
+    `UPDATE transactions SET date = ?, amount = ?, kind = ?, categoryId = ?, description = ?, needsReview = 0 WHERE id = ?`,
+    [d.date, d.amount, d.kind, d.categoryId, d.description, id],
+  );
+}
+
+export async function deleteTransaction(db: Db, id: string): Promise<void> {
+  await db.run(`DELETE FROM transactions WHERE id = ?`, [id]);
+}
+
 export async function listTransactions(db: Db, from: string, to: string): Promise<Transaction[]> {
   const rows = await db.all<Row>(
     `SELECT * FROM transactions WHERE date >= ? AND date <= ? ORDER BY date DESC, createdAt DESC`,
@@ -103,6 +121,10 @@ export async function setSetting(db: Db, key: string, value: string): Promise<vo
   );
 }
 
+export async function deleteSetting(db: Db, key: string): Promise<void> {
+  await db.run(`DELETE FROM meta WHERE key = ?`, [key]);
+}
+
 export async function addGoal(db: Db, g: Omit<Goal, 'id' | 'saved'>): Promise<Goal> {
   const goal: Goal = { ...g, id: newId(), saved: 0 };
   await db.run(
@@ -124,9 +146,9 @@ export async function deleteGoal(db: Db, id: string): Promise<void> {
   await db.run(`DELETE FROM goals WHERE id = ?`, [id]);
 }
 
-const SETTING_KEYS = ['monthlyIncome', 'reserveBalance'];
+const SETTING_KEYS = ['monthlyIncome', 'reserveBalance', 'accountBalance'];
 
-export interface Backup {
+export interface Backup extends LedgerBackup {
   version: 1;
   transactions: Transaction[];
   rules: Record<string, string>;
@@ -145,6 +167,7 @@ export async function exportAll(db: Db): Promise<Backup> {
   return {
     version: 1, transactions: rows.map(toTx), rules: await getUserRules(db),
     bills: await listBills(db), goals: await listGoals(db), settings,
+    ...(await exportLedger(db)),
   };
 }
 
@@ -177,6 +200,7 @@ export async function importBackup(db: Db, data: Backup): Promise<{ added: numbe
         [g.id, g.name, g.target, g.startDate, g.deadline, g.saved],
       );
     }
+    await importLedger(db, data);
     for (const [k, v] of Object.entries(data.settings ?? {})) if (SETTING_KEYS.includes(k)) await setSetting(db, k, v);
     for (const [k, v] of Object.entries(data.rules ?? {})) await setUserRule(db, k, v);
     await db.run('COMMIT');

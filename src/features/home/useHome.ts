@@ -1,5 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import type { Transaction } from '../../domain/types';
+import { loadHandled, pendingIncomes } from '../invest/entrada';
+import { incomeSetting, materializeIncome } from '../ledger/actions';
 import { getSetting, listBills, listGoals, listTransactions } from '../../db/repo';
 import { topAlert, type Alert } from '../../engine/alerts';
 import { canSpendToday, expectedMonthlyIncome, type CanSpend } from '../../engine/today';
@@ -15,6 +18,7 @@ export interface HomeState {
   score: Score;
   canSpend: CanSpend | null;
   alert: Alert | null;
+  newIncome: Transaction | null; // ganho recente ainda sem "onde investir" resolvido
 }
 
 export function useHome() {
@@ -24,16 +28,18 @@ export function useHome() {
   const reload = useCallback(async () => {
     const today = todayLocal();
     const month = monthOf(today);
+    await materializeIncome(db, today);
     let first = month;
     for (let i = 0; i < 3; i++) first = prevMonth(first);
     const txs = await listTransactions(db, `${first}-01`, `${month}-31`);
     const bills = await listBills(db);
-    const setting = Number(await getSetting(db, 'monthlyIncome')) || null;
+    const setting = await incomeSetting(db, month);
     const expectedIncome = expectedMonthlyIncome(txs, today, setting);
     const reserveSetting = await getSetting(db, 'reserveBalance');
     setState({
       canSpend: canSpendToday({ today, expectedIncome, bills, txs }),
       alert: topAlert(txs, today),
+      newIncome: pendingIncomes(txs, await loadHandled(db), today)[0] ?? null,
       month,
       count: txs.length,
       summary: monthSummary(txs, month, today),

@@ -1,6 +1,7 @@
-import type { Bill, Goal, Transaction } from '../../domain/types';
+import type { Bill, Goal, Holding, Transaction } from '../../domain/types';
 import { essentialMonthlyAverage } from '../../engine/composite';
 import { PRODUCTS } from '../../engine/invest/fixedIncome';
+import { buildPortfolio, type PortfolioView } from '../../engine/invest/portfolio';
 import { recommend, type Recommendation } from '../../engine/invest/recommend';
 import type { AssetClass, ExplainLine, ProductId } from '../../engine/invest/types';
 import { canSpendToday, expectedMonthlyIncome } from '../../engine/today';
@@ -31,6 +32,7 @@ export interface InvestView {
   noData: boolean;
   isReference: boolean; // sem valor: ranking calculado sobre R$ 1.000 de referência
   snapshot: MarketSnapshot;
+  portfolio: PortfolioView | null; // carteira cadastrada em Meus dados
 }
 
 export interface ViewInput {
@@ -39,6 +41,7 @@ export interface ViewInput {
   txs: Transaction[];
   bills: Bill[];
   goals: Goal[];
+  holdings?: Holding[];
   reserve: Cents | null;
   incomeSetting: Cents | null;
   today: string;
@@ -60,7 +63,8 @@ function savableAmount(txs: Transaction[], bills: Bill[], expectedIncome: Cents,
 }
 
 export function buildInvestView(input: ViewInput): InvestView {
-  const { settings, snapshot, txs, bills, goals, reserve, incomeSetting, today } = input;
+  const { settings, snapshot, txs, bills, goals, holdings = [], reserve, incomeSetting, today } = input;
+  const portfolio = buildPortfolio(holdings, settings.profile);
   const expectedIncome = expectedMonthlyIncome(txs, today, incomeSetting);
   const defaultAmount = savableAmount(txs, bills, expectedIncome, today);
   const amount = settings.amountOverride ?? defaultAmount;
@@ -69,6 +73,7 @@ export function buildInvestView(input: ViewInput): InvestView {
   const recommendation = recommend({
     amount, profile: settings.profile, reserve, essentialMonthly: essentialMonthlyAverage(txs, today),
     goals, today, term: settings.term, rates, hyp: settings.hyp,
+    portfolio: portfolio?.byClass,
   });
 
   const fx = snapshot['fx.usdbrl']?.value ?? null;
@@ -88,7 +93,7 @@ export function buildInvestView(input: ViewInput): InvestView {
 
   const quotes = Object.values(snapshot);
   return {
-    amount, defaultAmount, recommendation, assets, snapshot,
+    amount, defaultAmount, recommendation, assets, snapshot, portfolio,
     asOf: quotes.reduce<string | null>((m, x) => (m === null || x.asOf > m ? x.asOf : m), null),
     anyStale: quotes.some((x) => x.stale),
     noData: recommendation.ranking.length === 0,
@@ -163,7 +168,7 @@ export function explainFor(
   }
   if (ref === 'plan') {
     const lines: ExplainLine[] = view.recommendation.plan.steps.map((s) => ({
-      label: s.kind === 'reserva' ? 'Reserva de emergência' : s.kind === 'meta' ? `Meta: ${s.goalName}` : 'Mix do perfil',
+      label: s.kind === 'reserva' ? 'Reserva de emergência' : s.kind === 'meta' ? `Meta: ${s.goalName}` : view.portfolio ? 'Mix ajustado à sua carteira' : 'Mix do perfil',
       value: formatBRL(s.amount, { cents: true }),
     }));
     return { title: 'Sugestão do mês', lines };

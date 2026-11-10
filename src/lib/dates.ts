@@ -10,6 +10,12 @@ export function fromBR(ddmmyyyy: string): string {
   return `${y}-${m}-${d}`;
 }
 
+/** true se YYYY-MM-DD existe no calendário (rejeita 31/02). */
+export function isRealDate(d: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  return todayLocal(new Date(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)))) === d;
+}
+
 export function monthOf(d: string): string {
   return d.slice(0, 7);
 }
@@ -22,6 +28,12 @@ export function prevMonth(m: string): string {
   const y = Number(m.slice(0, 4));
   const mo = Number(m.slice(5, 7));
   return mo === 1 ? `${y - 1}-12` : `${y}-${pad(mo - 1)}`;
+}
+
+export function nextMonth(m: string): string {
+  const y = Number(m.slice(0, 4));
+  const mo = Number(m.slice(5, 7));
+  return mo === 12 ? `${y + 1}-01` : `${y}-${pad(mo + 1)}`;
 }
 
 export function daysInMonth(m: string): number {
