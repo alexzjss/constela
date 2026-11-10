@@ -1,3 +1,4 @@
+import { categoryById } from '../domain/categories';
 import type { Transaction } from '../domain/types';
 import { addDays, dayOf, daysInMonth, monthOf, prevMonth } from '../lib/dates';
 
@@ -24,6 +25,11 @@ function folgaPoints(txs: Transaction[], today: string): number {
 /** Registros: dias dos últimos 14 com algum lançamento (CSV cobre o dia). 0..10. */
 function registrosPoints(txs: Transaction[], today: string): number {
   const days = new Set(txs.map((t) => t.date));
+  // Um extrato importado cobre todos os dias entre o primeiro e o último lançamento dele.
+  const csv = txs.filter((t) => t.source === 'csv').map((t) => t.date).sort();
+  if (csv.length > 0) {
+    for (let d = csv[0]; d <= csv[csv.length - 1]; d = addDays(d, 1)) days.add(d);
+  }
   let covered = 0;
   for (let i = 0; i < 14; i++) if (days.has(addDays(today, -i))) covered += 1;
   return round2((covered / 14) * 10);
@@ -32,8 +38,11 @@ function registrosPoints(txs: Transaction[], today: string): number {
 /** Estabilidade: gasto do mês projetado contra a mediana dos 3 meses anteriores. 0..10. */
 function estabilidadePoints(txs: Transaction[], today: string): number {
   const month = monthOf(today);
+  // Gasto variável: fora essenciais (aluguel, contas…) e pagamento de fatura.
+  const variable = (t: Transaction) =>
+    t.kind === 'expense' && t.categoryId !== 'cartao' && !categoryById(t.categoryId).essential;
   const monthSpent = (m: string) =>
-    txs.filter((t) => t.kind === 'expense' && monthOf(t.date) === m).reduce((a, t) => a + t.amount, 0);
+    txs.filter((t) => variable(t) && monthOf(t.date) === m).reduce((a, t) => a + t.amount, 0);
 
   const history: number[] = [];
   let m = month;

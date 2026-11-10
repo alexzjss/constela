@@ -6,7 +6,7 @@ const rows = parseNubankCsv(text, {});
 const find = (prefix: string) => rows.find((r) => r.description.startsWith(prefix))!;
 
 test('lê todas as linhas, mesmo com BOM e vírgula entre aspas', () => {
-  expect(rows).toHaveLength(16);
+  expect(rows).toHaveLength(18);
   expect(find('Compra no débito - LOJA, DO ZE').amount).toBe(990);
 });
 
@@ -59,5 +59,14 @@ test('mesmo Identificador com valores opostos são lançamentos distintos', () =
   const pair = rows.filter((r) => r.externalId?.startsWith('id-dup-1'));
   expect(pair).toHaveLength(2);
   expect(new Set(pair.map((r) => r.externalId)).size).toBe(2);
-  expect(pair.map((r) => r.kind).sort()).toEqual(['expense', 'internal']);
+});
+
+test('Pix pago no crédito não conta como gasto (a fatura já o conta)', () => {
+  const pair = rows.filter((r) => r.externalId?.startsWith('id-dup-1'));
+  expect(pair.map((r) => r.kind)).toEqual(['internal', 'internal']);
+});
+
+test('Pix estornado se anula: nem gasto nem renda', () => {
+  const pair = rows.filter((r) => r.externalId?.startsWith('id-dup-2'));
+  expect(pair.map((r) => r.kind)).toEqual(['internal', 'internal']);
 });

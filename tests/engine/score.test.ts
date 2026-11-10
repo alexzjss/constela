@@ -43,3 +43,16 @@ test('total é (folga + constância) * 2', () => {
   const s = provisionalScore(fixture(), TODAY);
   expect(s.total).toBe(Math.round((s.folga + s.constancia) * 2));
 });
+
+test('aluguel (essencial) no começo do mês não derruba a estabilidade', () => {
+  const history = ['2026-08-10', '2026-09-10', '2026-10-10'].map((d) => tx(d, 300000, 'expense', 'lazer'));
+  const base = [...history, tx('2026-11-05', 10000, 'expense', 'lazer'), tx('2026-10-12', 100000, 'income', 'renda')];
+  const withRent = [...base, tx('2026-11-05', 150000, 'expense', 'moradia')];
+  expect(provisionalScore(withRent, TODAY).constancia).toBe(provisionalScore(base, TODAY).constancia);
+});
+
+test('um CSV cobre os dias do período, mesmo sem movimento', () => {
+  const edges = (src: 'csv' | 'form') =>
+    [tx('2026-10-20', 1000, 'expense', 'comida', src), tx('2026-11-09', 1000, 'expense', 'comida', src)];
+  expect(provisionalScore(edges('csv'), TODAY).constancia).toBeGreaterThan(provisionalScore(edges('form'), TODAY).constancia);
+});

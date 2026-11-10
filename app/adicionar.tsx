@@ -9,15 +9,17 @@ import { useDb } from '../src/lib/db-context';
 import { formatBRL, parseBRL } from '../src/lib/money';
 import { tokens } from '../src/theme/tokens';
 
-const today = todayLocal();
-const dateLabel = (d: string) => (d === today ? 'Hoje' : `${d.slice(8, 10)}/${d.slice(5, 7)}`);
+const dateLabel = (d: string, today: string) => (d === today ? 'Hoje' : `${d.slice(8, 10)}/${d.slice(5, 7)}`);
 
 export default function Adicionar() {
   const db = useDb();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [today] = useState(() => todayLocal()); // fixo enquanto a folha está aberta
   const add = useAdd(db, today);
   const [typed, setTyped] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const kind = add.draft?.kind ?? 'expense';
 
   const amountText = typed ?? (add.draft ? formatBRL(add.draft.amount, { cents: true }) : 'R$ 0');
@@ -58,7 +60,7 @@ export default function Adicionar() {
         onChangeText={(t) => {
           setTyped(t);
           const cents = parseBRL(t);
-          if (cents !== null) add.setAmount(cents);
+          add.setAmount(cents !== null && cents > 0 ? cents : 0);
         }}
         placeholderTextColor={tokens.color.primaryTint}
       />
@@ -78,21 +80,29 @@ export default function Adicionar() {
       <CategoryChips kind={kind} selected={add.draft?.categoryId ?? (kind === 'income' ? 'renda' : 'outros')} onSelect={add.setCategory} />
 
       <View style={styles.meta}>
-        <View style={styles.metaChip}><Text style={styles.metaText}>{dateLabel(add.draft?.date ?? today)}</Text></View>
+        <View style={styles.metaChip}><Text style={styles.metaText}>{dateLabel(add.draft?.date ?? today, today)}</Text></View>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !add.canSave }}
-        disabled={!add.canSave}
+        accessibilityState={{ disabled: !add.canSave || saving }}
+        disabled={!add.canSave || saving}
         onPress={async () => {
-          await add.save();
-          router.back();
+          setSaving(true);
+          setError(null);
+          try {
+            await add.save();
+            router.back();
+          } catch {
+            setError('Não consegui salvar. Tente de novo.');
+            setSaving(false);
+          }
         }}
-        style={[styles.save, !add.canSave && styles.saveOff]}
+        style={[styles.save, (!add.canSave || saving) && styles.saveOff]}
       >
         <Text style={styles.saveText}>Salvar</Text>
       </Pressable>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>
   );
 }
@@ -121,5 +131,6 @@ const styles = StyleSheet.create({
   metaText: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.onPrimary },
   save: { height: 60, borderRadius: 30, backgroundColor: tokens.color.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   saveOff: { opacity: 0.4 },
+  error: { fontFamily: tokens.font.bodyMedium, fontSize: 14, color: tokens.color.onPrimary },
   saveText: { fontFamily: tokens.font.display, fontSize: 17, color: tokens.color.primary },
 });

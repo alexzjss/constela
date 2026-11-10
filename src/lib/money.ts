@@ -13,7 +13,7 @@ export function parseBRL(text: string): Cents | null {
     const i = s.lastIndexOf(',');
     intPart = s.slice(0, i).replace(/\./g, '');
     decPart = s.slice(i + 1);
-  } else if (/^\d+\.\d{2}$/.test(s)) {
+  } else if (/^\d+\.\d{1,2}$/.test(s)) {
     [intPart, decPart] = s.split('.');
   } else {
     intPart = s.replace(/\./g, '');

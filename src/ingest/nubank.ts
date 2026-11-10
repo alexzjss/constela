@@ -69,7 +69,17 @@ export function parseNubankCsv(text: string, userRules: Record<string, string>):
   const header = table[0]?.map((h) => h.trim().normalize('NFC'));
   if (!header || header.join(',') !== 'Data,Valor,Identificador,Descrição') throw new NubankFormatError();
 
-  return table.slice(1).map(([data, valor, id, desc]) => {
+  const body = table.slice(1);
+  const byId = new Map<string, string[]>();
+  for (const [, , id, desc] of body) byId.set(id, [...(byId.get(id) ?? []), desc]);
+  // As duas pontas de uma operação (Pix pago no crédito + "Valor adicionado", ou Pix + Estorno)
+  // se anulam na conta; o gasto de verdade aparece só na fatura. Ambas viram internas.
+  const isPaired = (id: string) => {
+    const group = byId.get(id) ?? [];
+    return group.length > 1 && group.some((d) => /^(Valor adicionado|Estorno)/.test(d));
+  };
+
+  return body.map(([data, valor, id, desc]) => {
     const cents = parseBRL(valor) ?? 0;
     const description = sanitizeDescription(desc);
     const who = description.split(' - ')[1] ?? '';
@@ -84,7 +94,8 @@ export function parseNubankCsv(text: string, userRules: Record<string, string>):
       const income = cents > 0;
       return { ...base, kind: income ? 'income' : 'expense', categoryId: income ? 'renda' : 'outros', needsReview: true };
     }
-    const { kind, category } = hit[1];
+    const { category } = hit[1];
+    const kind = isPaired(id) ? 'internal' : hit[1].kind;
     const categoryId = typeof category === 'string' ? category : categorizeMerchant(who || desc, userRules);
     return { ...base, kind, categoryId, needsReview: false };
   });

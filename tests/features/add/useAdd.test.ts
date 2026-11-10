@@ -55,3 +55,11 @@ test('trocar para Ganho ajusta a categoria para uma de ganho', () => {
   expect(h.draft?.kind).toBe('income');
   expect(h.draft?.categoryId).toBe('renda');
 });
+
+test('apagar o campo de valor impede salvar o valor antigo', () => {
+  const h = useAddCore(fakeDb, T);
+  h.setAmount(5000);
+  expect(h.canSave).toBe(true);
+  h.setAmount(0);
+  expect(h.canSave).toBe(false);
+});
