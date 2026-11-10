@@ -1,6 +1,6 @@
-# Paralelo
+# Constela
 
-> Nome provisório (o repositório continua `money`).
+O repositório continua `money`. O pacote Android segue `dev.paralelo.app` (e o banco `paralelo.db`) de propósito: trocar o id faria o Android tratar o app como outro e a carteira já instalada se perderia.
 
 Companheiro de investimentos para Android. Pesquise ativos, veja como eles se movem entre si e em relação à sua carteira, e descubra onde colocar o próximo aporte, com a conta sempre à mostra.
 

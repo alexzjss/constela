@@ -68,8 +68,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v0.1.${{ github.run_number }}"
-          cp android/app/build/outputs/apk/release/app-release.apk "paralelo-$TAG.apk"
-          gh release create "$TAG" "paralelo-$TAG.apk" \
-            --title "Paralelo $TAG" \
+          cp android/app/build/outputs/apk/release/app-release.apk "constela-$TAG.apk"
+          gh release create "$TAG" "constela-$TAG.apk" \
+            --title "Constela $TAG" \
             --notes "Build automático do commit ${GITHUB_SHA::7}" \
             --target "$GITHUB_SHA"
