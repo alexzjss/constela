@@ -36,6 +36,7 @@ export default function RootLayout() {
           <Stack.Screen name="contas" />
           <Stack.Screen name="score" />
           <Stack.Screen name="metas" />
+          <Stack.Screen name="conta" />
         </Stack>
       </DbProvider>
     </SafeAreaProvider>
