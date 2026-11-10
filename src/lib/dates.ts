@@ -1,0 +1,41 @@
+/** Datas como string local YYYY-MM-DD. Nunca usa new Date(string) nem toISOString. */
+const pad = (n: number) => String(n).padStart(2, '0');
+
+export function todayLocal(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+export function fromBR(ddmmyyyy: string): string {
+  const [d, m, y] = ddmmyyyy.split('/');
+  return `${y}-${m}-${d}`;
+}
+
+export function monthOf(d: string): string {
+  return d.slice(0, 7);
+}
+
+export function dayOf(d: string): number {
+  return Number(d.slice(8, 10));
+}
+
+export function prevMonth(m: string): string {
+  const y = Number(m.slice(0, 4));
+  const mo = Number(m.slice(5, 7));
+  return mo === 1 ? `${y - 1}-12` : `${y}-${pad(mo - 1)}`;
+}
+
+export function daysInMonth(m: string): number {
+  return new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate();
+}
+
+export function addDays(d: string, n: number): string {
+  const dt = new Date(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)) + n);
+  return todayLocal(dt);
+}
+
+const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho',
+  'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+export function monthNamePt(m: string): string {
+  return MONTHS[Number(m.slice(5, 7)) - 1];
+}
