@@ -52,3 +52,8 @@ test('array vazio e status não-ok são omitidos', async () => {
   const es = await fetchBcb(fakeFetch({ '432': [], '4389': all['4389'] }), NOW);
   expect(es.map((e) => e.key)).toEqual(['bcb.cdi']);
 });
+
+test('valor vazio é omitido (não vira 0)', async () => {
+  const es = await fetchBcb(fakeFetch({ ...all, '432': [{ data: '06/11/2026', valor: '' }] }), NOW);
+  expect(byKey(es, 'bcb.selic')).toBeUndefined();
+});

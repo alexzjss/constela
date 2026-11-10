@@ -9,16 +9,19 @@ const pct = (x: number) => `${(x * 100).toFixed(2).replace('.', ',')}% a.a.`;
 export function FixedIncomeList(props: {
   ranking: FixedIncomeResult[];
   noData: boolean;
+  reference?: boolean;
   onOpen: (ref: string) => void;
 }) {
-  const { ranking, noData, onOpen } = props;
+  const { ranking, noData, reference, onOpen } = props;
   return (
     <View style={styles.box}>
       <Text style={styles.title}>Renda fixa, líquido de impostos</Text>
       {noData ? (
         <Text style={styles.muted}>Sem dados de taxas ainda. Conecte-se para atualizar.</Text>
       ) : (
-        ranking.map((r) => (
+        <>
+        {reference ? <Text style={styles.muted}>Simulação sobre R$ 1.000, sem sobra este mês.</Text> : null}
+        {ranking.map((r) => (
           <Pressable key={r.id} accessibilityRole="button" onPress={() => onOpen(`fixed:${r.id}`)} style={styles.row}>
             <View style={styles.left}>
               <Text style={styles.name}>{r.name}</Text>
@@ -29,7 +32,8 @@ export function FixedIncomeList(props: {
               <Text style={styles.muted}>+{formatBRL(r.netProfit)} em {r.term} meses</Text>
             </View>
           </Pressable>
-        ))
+        ))}
+        </>
       )}
     </View>
   );

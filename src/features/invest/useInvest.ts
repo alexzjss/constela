@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { getSetting, listBills, listGoals, listTransactions } from '../../db/repo';
+import { rdbNet } from '../../engine/composite';
 import { loadSnapshot, refreshMarket } from '../../invest/refresh';
 import { monthOf, prevMonth, todayLocal } from '../../lib/dates';
 import { useDb } from '../../lib/db-context';
@@ -22,13 +23,16 @@ export function useInvest() {
     const s = await loadInvestSettings(db);
     const reserveRaw = await getSetting(db, 'reserveBalance');
     const incomeRaw = Number(await getSetting(db, 'monthlyIncome')) || null;
+    // Sem saldo digitado, usa a caixinha estimada (aplicações RDB menos resgates).
+    const reserve =
+      reserveRaw === null ? rdbNet(await listTransactions(db, '0000-01-01', '9999-12-31')) : Number(reserveRaw);
     const next = buildInvestView({
       settings: s,
       snapshot: await loadSnapshot(db, new Date()),
       txs: await listTransactions(db, `${first}-01`, `${month}-31`),
       bills: await listBills(db),
       goals: await listGoals(db),
-      reserve: reserveRaw === null ? null : Number(reserveRaw),
+      reserve,
       incomeSetting: incomeRaw,
       today,
     });

@@ -13,6 +13,8 @@ const csv = [
   'Tesouro IPCA+;15/08/2030;06/11/2026;7,50;7,6;1;1;1',
   'Tesouro IPCA+;15/05/2035;06/11/2026;7,80;7,9;1;1;1',
   'Tesouro Prefixado;01/01/2027;05/11/2026;1,00;1,0;1;1;1',
+  'Tesouro Prefixado;01/06/2027;06/11/2026;0,00;0,0;1;1;1',
+  'Tesouro IPCA+;15/05/2027;06/11/2026;;;1;1;1',
 ].join('\n');
 
 const ok = (body: string) => (async () => ({ ok: true, status: 200, text: async () => body } as Response)) as unknown as typeof fetch;
@@ -44,4 +46,10 @@ test('título ausente omite as chaves; resposta não-ok devolve []', async () =>
   expect(es.map((e) => e.key)).toEqual(['tesouro.selicSpread']);
   const bad = (async () => ({ ok: false, status: 500, text: async () => '' } as Response)) as unknown as typeof fetch;
   expect(await fetchTesouro(bad, NOW)).toEqual([]);
+});
+
+test('taxa 0,00 ou vazia (título fora de oferta) é ignorada', async () => {
+  const es = await fetchTesouro(ok(csv), NOW);
+  expect(get(es, 'tesouro.pre.6')!.value).toBeCloseTo(0.131, 6);
+  expect(get(es, 'tesouro.ipca.6')!.value).toBeCloseTo(0.075, 6);
 });

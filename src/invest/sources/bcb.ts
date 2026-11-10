@@ -14,6 +14,7 @@ async function series(fetchFn: FetchFn, code: number, n: number): Promise<{ valu
     if (!res.ok) return null;
     const body = (await res.json()) as Point[];
     if (!Array.isArray(body) || body.length === 0) return null;
+    if (body.some((p) => typeof p.valor !== 'string' || p.valor.trim() === '')) return null;
     const values = body.map((p) => Number(p.valor));
     if (values.some((v) => !Number.isFinite(v))) return null;
     const [d, m, y] = body[body.length - 1].data.split('/');

@@ -34,7 +34,7 @@ function latestRows(text: string): Row[] {
     const base = iso(c[2]);
     const maturity = iso(c[1]);
     const rate = Number(c[3].replace(',', '.')) / 100;
-    if (!base || !maturity || !Number.isFinite(rate)) continue;
+    if (!base || !maturity || !c[3].trim() || !Number.isFinite(rate) || (rate <= 0 && c[0] !== 'Tesouro Selic')) continue; // 0,00 ou vazio = título fora de oferta
     if (base > latest) {
       latest = base;
       rows = [];

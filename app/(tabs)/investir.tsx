@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Profile, Term } from '../../src/engine/invest/types';
+import type { InvestSettings } from '../../src/features/invest/settings';
 import { AssetSection } from '../../src/features/invest/AssetSection';
 import { Disclaimer } from '../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../src/features/invest/FixedIncomeList';
@@ -44,9 +45,12 @@ export default function Investir() {
   const { settings, view, refreshing, refresh, update } = useInvest();
   const [amountText, setAmountText] = useState('');
   const [hypText, setHypText] = useState({ cdb: '', lci: '', custody: '' });
+  const synced = useRef(false);
 
+  // Preenche os campos só na primeira carga: depois disso o texto digitado é do usuário.
   useEffect(() => {
-    if (!settings) return;
+    if (!settings || synced.current) return;
+    synced.current = true;
     setAmountText(settings.amountOverride ? formatBRL(settings.amountOverride, { cents: true }).replace('R$ ', '') : '');
     setHypText({
       cdb: toPct(settings.hyp.cdbPctCdi), lci: toPct(settings.hyp.lciPctCdi), custody: toPct(settings.hyp.custodyPct),
@@ -56,18 +60,19 @@ export default function Investir() {
   if (!settings || !view) return <View style={styles.root} />;
   const open = (ref: string) => router.push({ pathname: '/conta', params: { ref } });
 
-  const commitAmount = () => {
+  // O que está digitado nos campos, pronto para salvar junto de qualquer outra mudança.
+  const typed = (): Partial<InvestSettings> => {
     const cents = amountText.trim() === '' ? null : parseBRL(amountText);
-    void update({ amountOverride: cents && cents > 0 ? cents : null });
-  };
-  const commitHyp = () => {
+    const patch: Partial<InvestSettings> = { amountOverride: cents && cents > 0 ? cents : null };
     const cdb = fromPct(hypText.cdb);
     const lci = fromPct(hypText.lci);
     const custody = fromPct(hypText.custody);
     if (cdb !== null && lci !== null && custody !== null) {
-      void update({ hyp: { cdbPctCdi: cdb, lciPctCdi: lci, custodyPct: custody } });
+      patch.hyp = { cdbPctCdi: cdb, lciPctCdi: lci, custodyPct: custody };
     }
+    return patch;
   };
+  const commit = (extra: Partial<InvestSettings> = {}) => void update({ ...typed(), ...extra });
 
   return (
     <ScrollView
@@ -86,26 +91,26 @@ export default function Investir() {
         placeholder={formatBRL(view.defaultAmount, { cents: true }).replace('R$ ', '')}
         placeholderTextColor="#8E99A8"
         onChangeText={setAmountText}
-        onEndEditing={commitAmount}
+        onEndEditing={() => commit()}
       />
       <Text style={styles.muted}>Em branco usa o que sobra no mês: {formatBRL(view.defaultAmount)}.</Text>
 
       <Text style={styles.label}>Perfil</Text>
       <View style={styles.chips}>
         {PROFILES.map((p) => (
-          <Chip key={p.id} label={p.label} on={settings.profile === p.id} onPress={() => void update({ profile: p.id })} />
+          <Chip key={p.id} label={p.label} on={settings.profile === p.id} onPress={() => commit({ profile: p.id })} />
         ))}
       </View>
 
       <Text style={styles.label}>Prazo</Text>
       <View style={styles.chips}>
         {TERMS.map((t) => (
-          <Chip key={t} label={`${t} meses`} on={settings.term === t} onPress={() => void update({ term: t })} />
+          <Chip key={t} label={`${t} meses`} on={settings.term === t} onPress={() => commit({ term: t })} />
         ))}
       </View>
 
       <PlanCard view={view} />
-      <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} onOpen={open} />
+      <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
       <AssetSection assets={view.assets} onOpen={open} />
 
       <View style={styles.hyp}>
@@ -124,7 +129,7 @@ export default function Investir() {
               value={hypText[k]}
               keyboardType="decimal-pad"
               onChangeText={(t) => setHypText((h) => ({ ...h, [k]: t }))}
-              onEndEditing={commitHyp}
+              onEndEditing={() => commit()}
             />
           </View>
         ))}

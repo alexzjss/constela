@@ -68,3 +68,9 @@ test('AssetSection mostra — quando falta indicador e selo de desatualizado', a
   expect(screen.getAllByText(/—/).length).toBeGreaterThan(0);
   expect(screen.getByText(/desatualizado/)).toBeTruthy();
 });
+
+test('FixedIncomeList avisa quando é simulação de referência', async () => {
+  const view = buildInvestView({ ...input, snapshot: { 'bcb.cdi': q(0.15), 'bcb.selic': q(0.15), 'bcb.tr': q(0) } });
+  await render(<FixedIncomeList ranking={view.recommendation.ranking} noData={false} reference onOpen={() => {}} />);
+  expect(screen.getByText('Simulação sobre R$ 1.000, sem sobra este mês.')).toBeTruthy();
+});
