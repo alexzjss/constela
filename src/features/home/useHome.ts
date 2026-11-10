@@ -1,10 +1,10 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { getSetting, listBills, listTransactions } from '../../db/repo';
+import { getSetting, listBills, listGoals, listTransactions } from '../../db/repo';
 import { topAlert, type Alert } from '../../engine/alerts';
 import { canSpendToday, expectedMonthlyIncome, type CanSpend } from '../../engine/today';
 import { monthSummary, type MonthSummary } from '../../engine/month';
-import { provisionalScore, type ProvisionalScore } from '../../engine/score';
+import { compositeScore, essentialMonthlyAverage, type Score } from '../../engine/composite';
 import { monthOf, prevMonth, todayLocal } from '../../lib/dates';
 import { useDb } from '../../lib/db-context';
 
@@ -12,7 +12,7 @@ export interface HomeState {
   month: string;
   count: number;
   summary: MonthSummary;
-  score: ProvisionalScore;
+  score: Score;
   canSpend: CanSpend | null;
   alert: Alert | null;
 }
@@ -30,13 +30,19 @@ export function useHome() {
     const bills = await listBills(db);
     const setting = Number(await getSetting(db, 'monthlyIncome')) || null;
     const expectedIncome = expectedMonthlyIncome(txs, today, setting);
+    const reserveSetting = await getSetting(db, 'reserveBalance');
     setState({
       canSpend: canSpendToday({ today, expectedIncome, bills, txs }),
       alert: topAlert(txs, today),
       month,
       count: txs.length,
       summary: monthSummary(txs, month, today),
-      score: provisionalScore(txs, today),
+      score: compositeScore({
+        txs, today, expectedIncome,
+        reserve: reserveSetting === null ? null : Number(reserveSetting),
+        essentialMonthly: essentialMonthlyAverage(txs, today),
+        goals: await listGoals(db),
+      }),
     });
   }, [db]);
 

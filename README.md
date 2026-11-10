@@ -57,4 +57,4 @@ Para importar seus extratos: exporte o CSV no app do Nubank ([passo a passo](doc
 
 ## Estado
 
-M0, M1 e M2 implementados (início, adicionar, importar CSV do Nubank, exportar e importar backup, contas fixas, Pode gastar hoje e alerta de gasto fora do padrão). Decisões, linha do tempo e metas ainda não existem. Veja o [roadmap](docs/06-roadmap.md).
+M0, M1, M2 e M3 implementados (início, adicionar, importar CSV do Nubank, exportar e importar backup, contas fixas, Pode gastar hoje, alerta de gasto fora do padrão, metas, reserva e a tela que explica o score). Decisões e linha do tempo ainda não existem. Veja o [roadmap](docs/06-roadmap.md).

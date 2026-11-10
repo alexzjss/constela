@@ -67,3 +67,11 @@ Para cada categoria: compara o acumulado no mês com a mediana do acumulado **at
 - Renda recorrente: lançamentos de ganho marcados como recorrentes, ou a mesma origem com valor parecido em 2 meses seguidos.
 - Proposta de nova era: a renda recorrente muda mais de 15% e se mantém por 2 meses.
 - Métricas por era: renda média, % gasto, % guardado, score médio, e a variação do % gasto em relação à era anterior.
+
+## Como o código resolveu os pontos em aberto (M3)
+
+- **Gasto essencial mensal** = média, nos até 3 meses anteriores com dados, das categorias essenciais mais o pagamento de fatura (Cartão).
+- **Saldo da reserva** vem do que você digita em Metas e reserva. Se estiver vazio, o app só sugere o saldo estimado da caixinha (aplicações RDB menos resgates).
+- **Pilar desconhecido entra neutro**: Reserva 15 e Rumo 10. Com os dois desconhecidos vale o score provisório (Folga + Constância) × 2. O score fica "provisório" enquanto um dos dois for desconhecido.
+- **Meta recém-criada** (nada planejado ainda) vale 100% do planejado, para não punir o primeiro dia.
+- **Próxima ação** testa três ações (guardar na reserva, registrar os dias em falta, guardar numa meta atrasada) e mostra a de maior ganho, com no mínimo 1 ponto. O valor de teste é 10% da renda esperada, com piso de R$ 50.

@@ -33,6 +33,12 @@ export function addDays(d: string, n: number): string {
   return todayLocal(dt);
 }
 
+/** Dias de a até b (b - a). */
+export function daysBetween(a: string, b: string): number {
+  const ms = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)));
+  return Math.round((ms(b) - ms(a)) / 86400000);
+}
+
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho',
   'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 

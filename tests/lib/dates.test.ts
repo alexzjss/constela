@@ -17,3 +17,11 @@ test('conversões de data', () => {
   expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
   expect(monthNamePt('2026-10')).toBe('outubro');
 });
+
+import { daysBetween } from '../../src/lib/dates';
+
+test('daysBetween conta dias entre datas locais', () => {
+  expect(daysBetween('2026-11-01', '2026-11-15')).toBe(14);
+  expect(daysBetween('2026-02-28', '2026-03-01')).toBe(1);
+  expect(daysBetween('2026-11-15', '2026-11-01')).toBe(-14);
+});

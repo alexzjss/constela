@@ -40,3 +40,12 @@ export interface Bill {
   dueDay: number; // 1..31
   categoryId: string;
 }
+
+export interface Goal {
+  id: string;
+  name: string;
+  target: number; // centavos
+  startDate: string; // YYYY-MM-DD
+  deadline: string; // YYYY-MM-DD
+  saved: number; // centavos
+}

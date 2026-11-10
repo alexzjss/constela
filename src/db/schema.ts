@@ -28,6 +28,14 @@ export async function migrate(db: Db): Promise<void> {
     dueDay INTEGER NOT NULL,
     categoryId TEXT NOT NULL
   )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS goals (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    target INTEGER NOT NULL,
+    startDate TEXT NOT NULL,
+    deadline TEXT NOT NULL,
+    saved INTEGER NOT NULL DEFAULT 0
+  )`);
   await db.run(
     `INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`,
     [String(SCHEMA_VERSION)],

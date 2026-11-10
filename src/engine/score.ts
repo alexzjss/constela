@@ -11,6 +11,16 @@ export interface ProvisionalScore {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Renda e gasto dos últimos 30 dias. */
+export function windowStats(txs: Transaction[], today: string): { income: number; spent: number } {
+  const from = addDays(today, -29);
+  const win = txs.filter((t) => t.date >= from && t.date <= today);
+  return {
+    income: win.filter((t) => t.kind === 'income').reduce((a, t) => a + t.amount, 0),
+    spent: win.filter((t) => t.kind === 'expense').reduce((a, t) => a + t.amount, 0),
+  };
+}
+
 /** Folga: sobra da renda nos últimos 30 dias. 0% -> 0 pontos, 30% ou mais -> 30. */
 function folgaPoints(txs: Transaction[], today: string): number {
   const from = addDays(today, -29);
@@ -23,7 +33,7 @@ function folgaPoints(txs: Transaction[], today: string): number {
 }
 
 /** Registros: dias dos últimos 14 com algum lançamento (CSV cobre o dia). 0..10. */
-function registrosPoints(txs: Transaction[], today: string): number {
+export function registrosPoints(txs: Transaction[], today: string): number {
   const days = new Set(txs.map((t) => t.date));
   // Um extrato importado cobre todos os dias entre o primeiro e o último lançamento dele.
   const csv = txs.filter((t) => t.source === 'csv').map((t) => t.date).sort();

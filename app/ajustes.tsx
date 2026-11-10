@@ -73,6 +73,9 @@ export default function Ajustes() {
       <Pressable accessibilityRole="button" onPress={() => router.push('/contas')} style={styles.secondary}>
         <Text style={styles.secondaryText}>Contas fixas e renda</Text>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/metas')} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Metas e reserva</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" disabled={busy} onPress={onBackup} style={[styles.secondary, busy && styles.off]}>
         <Text style={styles.secondaryText}>Importar backup</Text>
       </Pressable>

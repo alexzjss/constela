@@ -1,4 +1,4 @@
-import type { Bill, Draft, Source, Transaction } from '../domain/types';
+import type { Bill, Draft, Goal, Source, Transaction } from '../domain/types';
 import type { ImportedRow } from '../ingest/nubank';
 import type { Db } from './db';
 
@@ -103,13 +103,35 @@ export async function setSetting(db: Db, key: string, value: string): Promise<vo
   );
 }
 
-const SETTING_KEYS = ['monthlyIncome'];
+export async function addGoal(db: Db, g: Omit<Goal, 'id' | 'saved'>): Promise<Goal> {
+  const goal: Goal = { ...g, id: newId(), saved: 0 };
+  await db.run(
+    `INSERT INTO goals (id, name, target, startDate, deadline, saved) VALUES (?, ?, ?, ?, ?, ?)`,
+    [goal.id, goal.name, goal.target, goal.startDate, goal.deadline, goal.saved],
+  );
+  return goal;
+}
+
+export async function listGoals(db: Db): Promise<Goal[]> {
+  return db.all<Goal>(`SELECT * FROM goals ORDER BY deadline, name`);
+}
+
+export async function addToGoal(db: Db, id: string, cents: number): Promise<void> {
+  await db.run(`UPDATE goals SET saved = saved + ? WHERE id = ?`, [cents, id]);
+}
+
+export async function deleteGoal(db: Db, id: string): Promise<void> {
+  await db.run(`DELETE FROM goals WHERE id = ?`, [id]);
+}
+
+const SETTING_KEYS = ['monthlyIncome', 'reserveBalance'];
 
 export interface Backup {
   version: 1;
   transactions: Transaction[];
   rules: Record<string, string>;
   bills?: Bill[];
+  goals?: Goal[];
   settings?: Record<string, string>;
 }
 
@@ -120,7 +142,10 @@ export async function exportAll(db: Db): Promise<Backup> {
     const v = await getSetting(db, k);
     if (v !== null) settings[k] = v;
   }
-  return { version: 1, transactions: rows.map(toTx), rules: await getUserRules(db), bills: await listBills(db), settings };
+  return {
+    version: 1, transactions: rows.map(toTx), rules: await getUserRules(db),
+    bills: await listBills(db), goals: await listGoals(db), settings,
+  };
 }
 
 /** Restaura um backup JSON sem duplicar (por id e por externalId). Conta só lançamentos. */
@@ -143,6 +168,14 @@ export async function importBackup(db: Db, data: Backup): Promise<{ added: numbe
     for (const b of data.bills ?? []) {
       if (haveBills.has(b.id)) continue;
       await db.run(`INSERT INTO bills (id, name, amount, dueDay, categoryId) VALUES (?, ?, ?, ?, ?)`, [b.id, b.name, b.amount, b.dueDay, b.categoryId]);
+    }
+    const haveGoals = new Set((await listGoals(db)).map((g) => g.id));
+    for (const g of data.goals ?? []) {
+      if (haveGoals.has(g.id)) continue;
+      await db.run(
+        `INSERT INTO goals (id, name, target, startDate, deadline, saved) VALUES (?, ?, ?, ?, ?, ?)`,
+        [g.id, g.name, g.target, g.startDate, g.deadline, g.saved],
+      );
     }
     for (const [k, v] of Object.entries(data.settings ?? {})) if (SETTING_KEYS.includes(k)) await setSetting(db, k, v);
     for (const [k, v] of Object.entries(data.rules ?? {})) await setUserRule(db, k, v);

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { ProvisionalScore } from '../../engine/score';
+import type { Score } from '../../engine/composite';
 import { monthNamePt } from '../../lib/dates';
 import { tokens } from '../../theme/tokens';
 
@@ -9,7 +9,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 interface Props {
   month: string;
-  score: ProvisionalScore | null; // null = sem dados ainda
+  score: Score | null; // null = sem dados ainda
   topInset: number;
 }
 
@@ -17,9 +17,9 @@ export function ScoreHeader({ month, score, topInset }: Props) {
   const router = useRouter();
   const pillars: [string, number][] = [
     ['Folga', score ? score.folga / 30 : 0],
-    ['Reserva', 0],
+    ['Reserva', score?.reserva != null ? score.reserva / 30 : 0],
     ['Constância', score ? score.constancia / 20 : 0],
-    ['Rumo', 0],
+    ['Rumo', score?.rumo != null ? score.rumo / 20 : 0],
   ];
   return (
     <View style={[styles.wrap, { paddingTop: topInset + 12 }]}>
@@ -29,16 +29,20 @@ export function ScoreHeader({ month, score, topInset }: Props) {
           <Text style={styles.settingsText}>Ajustes</Text>
         </Pressable>
       </View>
-      <View style={styles.scoreRow}>
-        <Text style={styles.score} accessibilityLabel={score ? `Score ${score.total} de 100` : 'Sem score'}>
-          {score ? score.total : '—'}
-        </Text>
-        {score ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={score ? `Score ${score.total} de 100. Ver a conta` : 'Sem score'}
+        disabled={!score}
+        onPress={() => router.push('/score')}
+        style={styles.scoreRow}
+      >
+        <Text style={styles.score}>{score ? score.total : '—'}</Text>
+        {score?.provisional ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>provisório</Text>
           </View>
         ) : null}
-      </View>
+      </Pressable>
       <View style={styles.pillars}>
         {pillars.map(([name, ratio]) => (
           <View key={name} style={styles.pillar}>
