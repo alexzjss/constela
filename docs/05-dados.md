@@ -45,4 +45,4 @@ user ─┬─ account ─── transaction ─── category
 
 ## Categorias iniciais
 
-Moradia, Alimentação, Transporte, Contas (internet, celular, luz), Saúde, Educação, Lazer, Compras, Presentes, Outros. As quatro primeiras e Saúde contam como essenciais para o pilar Reserva. O usuário pode renomear, criar e arquivar.
+Definidas em `src/domain/categories.ts`. Gasto: Comida, Transporte, Contas, Moradia, Saúde (essenciais) e Educação, Lazer, Compras, Presentes, Cartão (pagamento de fatura), Outros. Ganho: Renda, Reembolso. Interna: Reserva (aplicações e resgates, que não contam como renda nem gasto). Cada categoria de gasto tem uma cor própria; o azul do app fica reservado à interface.
