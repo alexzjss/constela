@@ -38,6 +38,23 @@ Roda inteiro no celular: sem servidor, sem conta, sem custo. Todo número vem de
 6. [Roadmap](docs/06-roadmap.md): marcos de entrega e questões em aberto.
 7. [Importar do Nubank](docs/07-nubank.md): como exportar seu extrato e usá-lo aqui.
 
+## Rodar e instalar
+
+```bash
+npm install
+npm test              # testes (Jest)
+npx expo start        # abre no Expo Go, no Android
+```
+
+Para gerar o APK (exige conta Expo gratuita; o login é seu):
+
+```bash
+npx eas-cli login
+npx eas-cli build -p android --profile preview
+```
+
+Para importar seus extratos: exporte o CSV no app do Nubank ([passo a passo](docs/07-nubank.md)), copie para o celular e use Ajustes › Importar extrato.
+
 ## Estado
 
-Planejamento. Ainda não há código; as pastas são só o esqueleto.
+M0 e M1 implementados (início, adicionar, importar CSV do Nubank, exportar dados). Decisões, linha do tempo, metas e Pode gastar hoje ainda não existem. Veja o [roadmap](docs/06-roadmap.md).

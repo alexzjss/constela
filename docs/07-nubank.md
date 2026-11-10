@@ -19,7 +19,7 @@ Não encontrei confirmação de que o app exporta a fatura em CSV. Enquanto isso
 1. Salve os CSVs em `data/private/`. Essa pasta é ignorada pelo git; nada dela vai para o GitHub.
 2. Nunca coloque um extrato real em `data/samples/`, que é pública.
 3. Para os testes, criamos em `data/samples/` arquivos fictícios com as mesmas colunas e valores inventados.
-4. O leitor do CSV (marco M2) será escrito a partir das colunas do seu arquivo real, então o primeiro passo do M2 é você exportar um mês e me mostrar só o cabeçalho.
+4. O leitor do CSV já existe (`src/ingest/nubank.ts`) e foi escrito a partir de extratos reais. Colunas: `Data, Valor, Identificador, Descrição`. O Identificador se repete entre as duas pontas de uma operação, então o app usa `Identificador|valor` para não duplicar nem perder lançamentos.
 
 ## Exportar os dados do próprio app
 

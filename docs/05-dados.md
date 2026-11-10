@@ -38,10 +38,10 @@ user ─┬─ account ─── transaction ─── category
 - **Dinheiro é inteiro.** Centavos, nunca ponto flutuante.
 - **Nada é apagado de verdade.** Lançamentos e categorias são arquivados; o histórico não muda de forma.
 - **Correção deixa rastro.** Editar um lançamento guarda o valor anterior.
-- **Importação é idempotente.** Importar o mesmo CSV duas vezes não duplica nada (hash por linha).
+- **Importação é idempotente.** Importar o mesmo CSV duas vezes não duplica nada. A chave é `Identificador|valor`, porque o Identificador do Nubank se repete entre as duas pontas de uma operação (Pix + crédito adicionado, Pix + estorno).
 - **Snapshots são imutáveis.** O score de um dia passado não é recalculado quando a fórmula muda; a versão da fórmula fica gravada no snapshot.
-- **Tudo tem `user_id`.** Mesmo com um usuário só.
-- **Datas** em UTC no banco, exibidas no fuso do usuário. O "dia" de um lançamento é o dia local.
+- **Um usuário só.** O banco vive no aparelho; não há `user_id`.
+- **Datas** são texto `YYYY-MM-DD` no dia local do aparelho. Nunca `new Date(texto)`.
 
 ## Categorias iniciais
 
