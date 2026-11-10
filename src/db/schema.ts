@@ -1,6 +1,6 @@
 import type { Db } from './db';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export async function migrate(db: Db): Promise<void> {
   await db.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
@@ -42,6 +42,35 @@ export async function migrate(db: Db): Promise<void> {
     asOf TEXT NOT NULL,
     fetchedAt TEXT NOT NULL,
     extra TEXT
+  )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS income_sources (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    startMonth TEXT NOT NULL,
+    endMonth TEXT,
+    active INTEGER NOT NULL DEFAULT 1
+  )`);
+  // Um mês já lançado nunca é lançado de novo, mesmo que o lançamento seja apagado.
+  await db.run(`CREATE TABLE IF NOT EXISTS income_runs (
+    sourceId TEXT NOT NULL,
+    month TEXT NOT NULL,
+    PRIMARY KEY (sourceId, month)
+  )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS holdings (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    invested INTEGER NOT NULL,
+    value INTEGER NOT NULL,
+    updatedAt TEXT NOT NULL
+  )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS month_snapshots (
+    month TEXT PRIMARY KEY,
+    accountBalance INTEGER,
+    invested INTEGER
   )`);
   await db.run(
     `INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`,

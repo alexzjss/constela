@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { categoryById } from '../../domain/categories';
-import type { Draft, Kind } from '../../domain/types';
+import type { Draft, Kind, Transaction } from '../../domain/types';
 import type { Db } from '../../db/db';
 import { getUserRules, insertTransaction, setUserRule } from '../../db/repo';
 import { parsePhrase } from '../../parser/phrase';
@@ -15,7 +15,7 @@ export interface AddCore {
   setCategory(id: string): void;
   setAmount(cents: number): void;
   loadRules(): Promise<void>;
-  save(): Promise<void>;
+  save(): Promise<Transaction | null>;
 }
 
 /** Lógica pura da folha "Adicionar" (sem React). O nome segue o plano. */
@@ -49,12 +49,13 @@ export function useAddCore(db: Db, today: string): AddCore {
     async loadRules() { rules = await getUserRules(db); },
     async save() {
       const d = compute();
-      if (!d) return;
-      await insertTransaction(db, { ...d, source: text.trim() ? 'text' : 'form' });
+      if (!d) return null;
+      const saved = await insertTransaction(db, { ...d, source: text.trim() ? 'text' : 'form' });
       const suggested = parsed()?.categoryId;
       if (categoryOverride && categoryOverride !== suggested && d.description) {
         await setUserRule(db, normalizeKey(d.description), categoryOverride);
       }
+      return saved;
     },
   };
 }

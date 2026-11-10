@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryGrid } from '../../src/features/home/CategoryGrid';
+import { IncomeCard } from '../../src/features/home/IncomeCard';
 import { AlertCard } from '../../src/features/home/AlertCard';
 import { TodayRow } from '../../src/features/home/TodayRow';
 import { MonthBar } from '../../src/features/home/MonthBar';
@@ -27,6 +28,9 @@ export default function Inicio() {
           </Pressable>
         ) : (
           <>
+            {state.newIncome ? (
+              <IncomeCard income={state.newIncome} onPress={() => router.push({ pathname: '/entrada', params: { id: state.newIncome!.id } })} />
+            ) : null}
             {state.canSpend ? <TodayRow amount={state.canSpend.amount} /> : null}
             {state.alert ? <AlertCard alert={state.alert} /> : null}
             <MonthBar summary={state.summary} />

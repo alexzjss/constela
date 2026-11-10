@@ -8,6 +8,7 @@ import { AssetSection } from '../../src/features/invest/AssetSection';
 import { Disclaimer } from '../../src/features/invest/Disclaimer';
 import { FixedIncomeList } from '../../src/features/invest/FixedIncomeList';
 import { PlanCard } from '../../src/features/invest/PlanCard';
+import { PortfolioCard } from '../../src/features/invest/PortfolioCard';
 import { useInvest } from '../../src/features/invest/useInvest';
 import { formatBRL, parseBRL } from '../../src/lib/money';
 import { tokens } from '../../src/theme/tokens';
@@ -110,6 +111,7 @@ export default function Investir() {
       </View>
 
       <PlanCard view={view} />
+      <PortfolioCard view={view} onEdit={() => router.push('/dados')} />
       <FixedIncomeList ranking={view.recommendation.ranking} noData={view.noData} reference={view.isReference} onOpen={open} />
       <AssetSection assets={view.assets} onOpen={open} />
 

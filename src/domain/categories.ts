@@ -19,7 +19,13 @@ export const DEFAULT_CATEGORIES: Category[] = [
   c('outros', 'Outros', '#8E99A8', '#EFF1F4', false),
   c('renda', 'Renda', '#2447F9', '#EEF1FF', false, 'income'),
   c('reembolso', 'Reembolso', '#4B68FF', '#EEF1FF', false, 'income'),
+  c('salario', 'Salário', '#0E9F6E', '#E3F8EF', false, 'income'),
+  c('bolsa', 'Bolsa', '#7C5CFF', '#F1ECFF', false, 'income'),
+  c('rendimento', 'Rendimentos', '#00A3BF', '#E0F7FB', false, 'income'),
+  c('freelance', 'Freela', '#F29D38', '#FFF1E6', false, 'income'),
+  c('beneficio', 'Benefício', '#D6479A', '#FFE8F2', false, 'income'),
   c('reserva', 'Reserva', '#1A38D6', '#EEF1FF', false, 'internal'),
+  c('investimento', 'Investimento', '#1A38D6', '#EEF1FF', false, 'internal'),
 ];
 
 export const categoryById = (id: string): Category =>

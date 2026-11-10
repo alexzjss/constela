@@ -49,3 +49,37 @@ export interface Goal {
   deadline: string; // YYYY-MM-DD
   saved: number; // centavos
 }
+
+/** Tipos de ganho recorrente. O id é também o id da categoria do lançamento gerado. */
+export type IncomeType = 'salario' | 'bolsa' | 'rendimento' | 'freelance' | 'beneficio' | 'renda';
+
+export interface IncomeSource {
+  id: string;
+  name: string;
+  type: IncomeType;
+  amount: number; // centavos, por mês
+  day: number; // 1..31 (meses curtos usam o último dia)
+  startMonth: string; // YYYY-MM, primeiro mês a receber
+  endMonth: string | null; // último mês a receber; null = sem fim
+  active: boolean;
+}
+
+export type HoldingType =
+  | 'poupanca' | 'tesouro' | 'cdb' | 'lciLca' | 'fii' | 'acoes' | 'exterior' | 'cripto' | 'outros';
+
+/** Uma posição investida: quanto entrou (invested) e quanto vale hoje (value). */
+export interface Holding {
+  id: string;
+  type: HoldingType;
+  name: string;
+  invested: number; // centavos
+  value: number; // centavos
+  updatedAt: string; // YYYY-MM-DD
+}
+
+/** Fotografia manual de um mês: o que o usuário viu no app do banco no fim dele. */
+export interface MonthSnapshot {
+  month: string; // YYYY-MM
+  accountBalance: number | null; // centavos
+  invested: number | null; // centavos
+}

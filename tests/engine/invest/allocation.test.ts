@@ -1,4 +1,4 @@
-import { classRange, planAllocation, splitByMix, type PlanInput } from '../../../src/engine/invest/allocation';
+import { classRange, planAllocation, rebalanceSplit, splitByMix, type PlanInput } from '../../../src/engine/invest/allocation';
 
 const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
 const base: PlanInput = {
@@ -56,4 +56,31 @@ test('sem valor: sem passos', () => {
     expect(p.steps).toEqual([]);
     expect(p.warnings).toEqual(['sem-valor']);
   }
+});
+
+describe('rebalanceSplit', () => {
+  const zero = { rendaFixa: 0, fii: 0, acoesBr: 0, exterior: 0, cripto: 0 };
+
+  test('carteira vazia equivale ao mix puro', () => {
+    expect(rebalanceSplit(100000, 'moderado', zero)).toEqual(splitByMix(100000, 'moderado'));
+  });
+
+  test('classe acima da meta não recebe; a soma fecha', () => {
+    const portfolio = { ...zero, rendaFixa: 900000 }; // só renda fixa
+    const out = rebalanceSplit(100000, 'moderado', portfolio);
+    expect(out.rendaFixa).toBe(0);
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(100000);
+    expect(out.fii).toBeGreaterThan(out.exterior);
+  });
+
+  test('carteira já no alvo cai no mix puro', () => {
+    const portfolio = { rendaFixa: 600000, fii: 150000, acoesBr: 150000, exterior: 80000, cripto: 20000 };
+    const out = rebalanceSplit(100000, 'moderado', portfolio);
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(100000);
+    expect(out.rendaFixa).toBeGreaterThan(0);
+  });
+
+  test('perfil conservador não manda nada a cripto mesmo com carteira vazia dela', () => {
+    expect(rebalanceSplit(100000, 'conservador', { ...zero, rendaFixa: 50000 }).cripto).toBe(0);
+  });
 });

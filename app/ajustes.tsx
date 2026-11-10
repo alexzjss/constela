@@ -70,6 +70,15 @@ export default function Ajustes() {
       <Pressable accessibilityRole="button" disabled={busy} onPress={onImport} style={[styles.primary, busy && styles.off]}>
         <Text style={styles.primaryText}>Importar extrato</Text>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/dados')} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Meus dados</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/renda')} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Ganhos e salários</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/mes')} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Mês a mês</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/contas')} style={styles.secondary}>
         <Text style={styles.secondaryText}>Contas fixas e renda</Text>
       </Pressable>

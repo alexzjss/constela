@@ -91,8 +91,9 @@ export default function Adicionar() {
           setSaving(true);
           setError(null);
           try {
-            await add.save();
-            router.back();
+            const saved = await add.save();
+            if (saved?.kind === 'income') router.replace({ pathname: '/entrada', params: { id: saved.id } });
+            else router.back();
           } catch {
             setError('Não consegui salvar. Tente de novo.');
             setSaving(false);

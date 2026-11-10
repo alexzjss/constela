@@ -1,14 +1,18 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
+import { listHoldings } from '../../db/ledger';
 import { getSetting, listBills, listGoals, listTransactions } from '../../db/repo';
 import { rdbNet } from '../../engine/composite';
+import { incomeSetting } from '../ledger/actions';
 import { loadSnapshot, refreshMarket } from '../../invest/refresh';
 import { monthOf, prevMonth, todayLocal } from '../../lib/dates';
+import type { Cents } from '../../lib/money';
 import { useDb } from '../../lib/db-context';
 import { loadInvestSettings, saveInvestSettings, type InvestSettings } from './settings';
 import { buildInvestView, type InvestView } from './view';
 
-export function useInvest() {
+/** forceAmount: valor a investir só para esta tela (ex.: um ganho recém-recebido), sem mexer nos ajustes salvos. */
+export function useInvest(forceAmount?: Cents) {
   const db = useDb();
   const [settings, setSettings] = useState<InvestSettings | null>(null);
   const [view, setView] = useState<InvestView | null>(null);
@@ -20,9 +24,10 @@ export function useInvest() {
     const month = monthOf(today);
     let first = month;
     for (let i = 0; i < 3; i++) first = prevMonth(first);
-    const s = await loadInvestSettings(db);
+    const loaded = await loadInvestSettings(db);
+    const s = forceAmount === undefined ? loaded : { ...loaded, amountOverride: forceAmount };
     const reserveRaw = await getSetting(db, 'reserveBalance');
-    const incomeRaw = Number(await getSetting(db, 'monthlyIncome')) || null;
+    const incomeRaw = await incomeSetting(db, month);
     // Sem saldo digitado, usa a caixinha estimada (aplicações RDB menos resgates).
     const reserve =
       reserveRaw === null ? rdbNet(await listTransactions(db, '0000-01-01', '9999-12-31')) : Number(reserveRaw);
@@ -32,6 +37,7 @@ export function useInvest() {
       txs: await listTransactions(db, `${first}-01`, `${month}-31`),
       bills: await listBills(db),
       goals: await listGoals(db),
+      holdings: await listHoldings(db),
       reserve,
       incomeSetting: incomeRaw,
       today,
@@ -40,7 +46,7 @@ export function useInvest() {
       setSettings(s);
       setView(next);
     }
-  }, [db]);
+  }, [db, forceAmount]);
 
   const refresh = useCallback(
     async (force = false) => {
