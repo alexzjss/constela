@@ -1,6 +1,6 @@
 import type { Db } from './db';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export async function migrate(db: Db): Promise<void> {
   await db.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
@@ -21,8 +21,15 @@ export async function migrate(db: Db): Promise<void> {
     key TEXT PRIMARY KEY,
     categoryId TEXT NOT NULL
   )`);
+  await db.run(`CREATE TABLE IF NOT EXISTS bills (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    dueDay INTEGER NOT NULL,
+    categoryId TEXT NOT NULL
+  )`);
   await db.run(
-    `INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)`,
+    `INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`,
     [String(SCHEMA_VERSION)],
   );
 }

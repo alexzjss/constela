@@ -6,7 +6,7 @@ Cada marco termina com um APK usável no celular.
 |---|---|---|
 | **M0 Fundação** | Projeto Expo, SQLite, tema visual, build de APK, testes rodando | O app abre no Android instalado por APK. |
 | **M1 Início** | Adicionar por teclado e por texto (parser local), importar CSV do Nubank, exportar dados, barra de gastos do mês com o fantasma, score provisório (Folga + Constância) | Registrar um gasto leva menos de 10 s e o mês cabe numa tela. |
-| **M2 Dia a dia** | Contas fixas, Pode gastar hoje, alerta de gasto fora do padrão, importar backup | Um mês inteiro de uso real sem planilha paralela. |
+| **M2 Dia a dia** (feito) | Contas fixas, Pode gastar hoje, alerta de gasto fora do padrão, importar backup | Um mês inteiro de uso real sem planilha paralela. |
 | **M3 Score completo** | Metas, Reserva e Rumo, tela "ver a conta", próxima ação | Todo ponto do score é explicado na tela. |
 | **M4 Decisões** | Diário de decisões, você paralelo, taxas do Banco Central, revisitas | Um ganho extra vira decisão e é revisitado em 30 dias. |
 | **M5 Memória** | Eras, linha do tempo, resumos semanal e mensal (modelo fixo; IA opcional) | A troca de renda vira uma era nova sem perder o histórico. |

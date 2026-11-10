@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDb } from '../src/lib/db-context';
+import { importBackup } from '../src/db/repo';
 import { importCsvFiles } from '../src/features/settings/importCsv';
 import { shareExport } from '../src/features/settings/shareExport';
 import { NubankFormatError } from '../src/ingest/nubank';
@@ -34,6 +35,21 @@ export default function Ajustes() {
     }
   };
 
+  const onBackup = async () => {
+    const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/*'], copyToCacheDirectory: true });
+    if (res.canceled) return;
+    setBusy(true);
+    try {
+      const text = await FileSystem.readAsStringAsync(res.assets[0].uri);
+      const { added, skipped } = await importBackup(db, JSON.parse(text));
+      setMessage(`${added} novos · ${skipped} já existiam`);
+    } catch {
+      setMessage('Esse arquivo não é um backup do Paralelo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onExport = async () => {
     setBusy(true);
     try {
@@ -53,6 +69,12 @@ export default function Ajustes() {
       </View>
       <Pressable accessibilityRole="button" disabled={busy} onPress={onImport} style={[styles.primary, busy && styles.off]}>
         <Text style={styles.primaryText}>Importar extrato</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/contas')} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Contas fixas e renda</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={onBackup} style={[styles.secondary, busy && styles.off]}>
+        <Text style={styles.secondaryText}>Importar backup</Text>
       </Pressable>
       <Pressable accessibilityRole="button" disabled={busy} onPress={onExport} style={[styles.secondary, busy && styles.off]}>
         <Text style={styles.secondaryText}>Exportar dados</Text>

@@ -3,6 +3,8 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryGrid } from '../../src/features/home/CategoryGrid';
+import { AlertCard } from '../../src/features/home/AlertCard';
+import { TodayRow } from '../../src/features/home/TodayRow';
 import { MonthBar } from '../../src/features/home/MonthBar';
 import { ScoreHeader } from '../../src/features/home/ScoreHeader';
 import { useHome } from '../../src/features/home/useHome';
@@ -25,6 +27,8 @@ export default function Inicio() {
           </Pressable>
         ) : (
           <>
+            {state.canSpend ? <TodayRow amount={state.canSpend.amount} /> : null}
+            {state.alert ? <AlertCard alert={state.alert} /> : null}
             <MonthBar summary={state.summary} />
             <CategoryGrid summary={state.summary} />
           </>

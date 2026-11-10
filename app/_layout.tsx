@@ -33,6 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="adicionar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ajustes" />
+          <Stack.Screen name="contas" />
         </Stack>
       </DbProvider>
     </SafeAreaProvider>

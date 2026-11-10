@@ -32,3 +32,11 @@ export interface Draft {
   categoryId: string;
   description: string;
 }
+
+export interface Bill {
+  id: string;
+  name: string;
+  amount: number; // centavos
+  dueDay: number; // 1..31
+  categoryId: string;
+}

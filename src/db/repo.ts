@@ -1,4 +1,4 @@
-import type { Draft, Source, Transaction } from '../domain/types';
+import type { Bill, Draft, Source, Transaction } from '../domain/types';
 import type { ImportedRow } from '../ingest/nubank';
 import type { Db } from './db';
 
@@ -74,7 +74,82 @@ export async function setUserRule(db: Db, key: string, categoryId: string): Prom
   );
 }
 
-export async function exportAll(db: Db) {
+export async function addBill(db: Db, b: Omit<Bill, 'id'>): Promise<Bill> {
+  const bill: Bill = { ...b, id: newId() };
+  await db.run(
+    `INSERT INTO bills (id, name, amount, dueDay, categoryId) VALUES (?, ?, ?, ?, ?)`,
+    [bill.id, bill.name, bill.amount, bill.dueDay, bill.categoryId],
+  );
+  return bill;
+}
+
+export async function listBills(db: Db): Promise<Bill[]> {
+  return db.all<Bill>(`SELECT * FROM bills ORDER BY dueDay, name`);
+}
+
+export async function deleteBill(db: Db, id: string): Promise<void> {
+  await db.run(`DELETE FROM bills WHERE id = ?`, [id]);
+}
+
+export async function getSetting(db: Db, key: string): Promise<string | null> {
+  const rows = await db.all<{ value: string }>(`SELECT value FROM meta WHERE key = ?`, [key]);
+  return rows[0]?.value ?? null;
+}
+
+export async function setSetting(db: Db, key: string, value: string): Promise<void> {
+  await db.run(
+    `INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    [key, value],
+  );
+}
+
+const SETTING_KEYS = ['monthlyIncome'];
+
+export interface Backup {
+  version: 1;
+  transactions: Transaction[];
+  rules: Record<string, string>;
+  bills?: Bill[];
+  settings?: Record<string, string>;
+}
+
+export async function exportAll(db: Db): Promise<Backup> {
   const rows = await db.all<Row>(`SELECT * FROM transactions ORDER BY date, createdAt`);
-  return { version: 1 as const, transactions: rows.map(toTx), rules: await getUserRules(db) };
+  const settings: Record<string, string> = {};
+  for (const k of SETTING_KEYS) {
+    const v = await getSetting(db, k);
+    if (v !== null) settings[k] = v;
+  }
+  return { version: 1, transactions: rows.map(toTx), rules: await getUserRules(db), bills: await listBills(db), settings };
+}
+
+/** Restaura um backup JSON sem duplicar (por id e por externalId). Conta só lançamentos. */
+export async function importBackup(db: Db, data: Backup): Promise<{ added: number; skipped: number }> {
+  if (!data || data.version !== 1 || !Array.isArray(data.transactions)) throw new Error('Backup inválido.');
+  const known = await db.all<{ id: string; externalId: string | null }>(`SELECT id, externalId FROM transactions`);
+  const ids = new Set(known.map((k) => k.id));
+  const exts = new Set(known.map((k) => k.externalId).filter((x): x is string => !!x));
+  let added = 0;
+  await db.run('BEGIN');
+  try {
+    for (const t of data.transactions) {
+      if (ids.has(t.id) || (t.externalId && exts.has(t.externalId))) continue;
+      ids.add(t.id);
+      if (t.externalId) exts.add(t.externalId);
+      await db.run(INSERT, params(t));
+      added += 1;
+    }
+    const haveBills = new Set((await listBills(db)).map((b) => b.id));
+    for (const b of data.bills ?? []) {
+      if (haveBills.has(b.id)) continue;
+      await db.run(`INSERT INTO bills (id, name, amount, dueDay, categoryId) VALUES (?, ?, ?, ?, ?)`, [b.id, b.name, b.amount, b.dueDay, b.categoryId]);
+    }
+    for (const [k, v] of Object.entries(data.settings ?? {})) if (SETTING_KEYS.includes(k)) await setSetting(db, k, v);
+    for (const [k, v] of Object.entries(data.rules ?? {})) await setUserRule(db, k, v);
+    await db.run('COMMIT');
+  } catch (e) {
+    await db.run('ROLLBACK');
+    throw e;
+  }
+  return { added, skipped: data.transactions.length - added };
 }
