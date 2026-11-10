@@ -46,12 +46,16 @@ npm test              # testes (Jest)
 npx expo start        # abre no Expo Go, no Android
 ```
 
-Para gerar o APK (exige conta Expo gratuita; o login é seu):
+### APK e atualização automática
 
-```bash
-npx eas-cli login
-npx eas-cli build -p android --profile preview
-```
+A cada push na `main`, o GitHub Actions ([workflow](.github/workflows/build-apk.yml)) roda os testes, gera o APK assinado e publica numa [Release](../../releases). Não usa conta Expo nem serviço pago.
+
+No celular:
+
+1. Instale o [Obtainium](https://github.com/ImranR98/Obtainium) (app de código aberto, fora da Play Store).
+2. Em "Adicionar app", cole a URL deste repositório. O Obtainium baixa a Release mais recente e avisa quando sai uma nova.
+
+A chave de assinatura fica nos *Secrets* do repositório (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) e em backup local do dono. Sem ela o Android recusa atualizar o app instalado. Para gerar um APK local sem a chave de release: `npx expo prebuild --platform android` e `cd android && ./gradlew assembleRelease` (assina com a chave de debug).
 
 Para importar seus extratos: exporte o CSV no app do Nubank ([passo a passo](docs/07-nubank.md)), copie para o celular e use Ajustes › Importar extrato.
 

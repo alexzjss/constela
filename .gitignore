@@ -9,3 +9,7 @@
 data/private/
 dist/
 node_modules/
+
+# build nativo gerado pelo prebuild
+/android/
+/ios/
